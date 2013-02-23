@@ -1,9 +1,0 @@
-This code was developed to integrate 2D diffraction pattern to 1D diffraction intensity and propagate the uncertainty. 
-The main contributors to this package were:
-
-    Xiaohao Yang
-
-For more information email sb2896@columbia.edu
-
-
-Last modified $Date: 2009-04-10 01:51:10 -0400 (Fri, 10 Apr 2009) $
