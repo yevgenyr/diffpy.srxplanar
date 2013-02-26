@@ -110,9 +110,10 @@ def main1(argv=sys.argv):
     #print argv
     #config = SrXPlanarConfig('test.cfg')
     #config.updateConfig()
-    xplanar = SrXPlanar('test.cfg')
+    xplanar = SrXPlanar('test_s_sr.cfg')
+    xplanar.updateConfig()
     #sig2d.newImageFile('KFe2As2-00838.tif')
-    xplanar.integrateAll()
+    xplanar.integrate('CeO2.tif')
     return
 
 def main():
@@ -123,6 +124,8 @@ def main():
         xplanar = SrXPlanar(configfile)
     elif os.path.exists('srxplanarconfig.cfg'):
         xplanar = SrXPlanar('srxplanarconfig.cfg')
+    else:
+        print 'please provide config file'
     xplanar.integrateAll()
     return
 

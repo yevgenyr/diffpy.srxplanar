@@ -88,9 +88,9 @@ class Calculate(object):
             mask = np.logical_not(mask)
         tthorqmatrix = self.tthorqmatrix
         tthorqmatrix[mask] = 1000.0
-        tthorqmatrix = np.floor(tthorqmatrix / self.tthorqstep).astype(int)
+        tthorqmatrix = np.ceil(tthorqmatrix / self.tthorqstep).astype(int)
         tthorqflat = tthorqmatrix.ravel()
-
+        
         self.ind = np.argsort(tthorqflat)
         sind = np.nonzero(np.diff(tthorqflat[self.ind]))[0] + 1
         self.indlow = np.concatenate([[0], sind])

@@ -126,7 +126,7 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
         if self.beamline.lower in set(['x17a']):
             self.loadFromFile('x17a.cfg')
         else:
-            self.loadFromFile(filename)
+            self.loadFromFile(self.beamline)
         return
     
     def loadFromFile(self, filename):
@@ -263,7 +263,7 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
         '''helpler function that get a list of int from one string
         '''
         temp = re.split('\s*,\s*', self.get(sectionname, optionname))
-        if len(temp)>1:
+        if len(temp)>0:
             intlist = map(int, temp)
         else:
             intlist = []
@@ -273,7 +273,7 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
         '''helpler function that get a list of float from one string
         '''
         temp = re.split('\s*,\s*', self.get(sectionname, optionname))
-        if len(temp)>1:
+        if len(temp)>0:
             floatlist = map(float, temp)
         else:
             floatlist = []
@@ -283,7 +283,7 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
         '''helpler function that get a list of string from one string(separated by ',')
         '''
         temp = re.split('\s*,\s*', self.get(sectionname, optionname))
-        if len(temp)>1:
+        if len(temp)>0:
             strlist = temp
         else:
             strlist = []
