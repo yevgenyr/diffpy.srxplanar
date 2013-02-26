@@ -78,7 +78,7 @@ class SrXPlanar(object):
         self.calculate.genIntegrationInds(masknormal)
         return
     
-    def integrate(self, image, filename=None):
+    def integrate(self, image, filename=None, savefile=True):
         if type(image)==str:
             self.pic = self.loadimage.loadImage(image)
             self.filename = image
@@ -93,7 +93,8 @@ class SrXPlanar(object):
         else:
             self.pic = self.pic * self.correction
             self.chi = self.calculate.intensity(self.pic)
-        self.saveresults.save(self.chi, self.filename)
+        if savefile:
+            self.saveresults.save(self.chi, self.filename)
         return self.chi
     
     def integrateAll(self):

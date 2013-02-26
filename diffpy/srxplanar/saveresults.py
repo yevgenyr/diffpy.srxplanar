@@ -61,7 +61,6 @@ class SaveResults(object):
         filepath = self.savedirectory + '/' + filebase + self.filenameplus + '.chi'
         f = open(filepath, 'wb')
         f.write(self.xrdHeader())
-        xrd = xrd.transpose()
         np.savetxt(f, xrd.transpose(), fmt='%g')
         f.close()
         return
@@ -79,6 +78,7 @@ class SaveResults(object):
             s = self.writeGSASStr(os.path.splitext(path)[0], self.gsasoutput, xrd[0], xrd[1])
         f.write(s)
         f.close()
+        return
     
     def writeGSASStr(self, name, mode, tth, iobs, esd=None):
         """Return string of integrated intensities in GSAS format.

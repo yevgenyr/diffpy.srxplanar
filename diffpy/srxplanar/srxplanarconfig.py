@@ -25,8 +25,8 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
         rootpath = os.getcwd()
         
         self.add_section('Experiment')
-        self._addExp('fit2dconfig', '')
         self._addExp('beamline', 'X17A')
+        self._addExp('fit2dconfig', '')
         self._addExp('tifdirectory', rootpath)
         self._addExp('savedirectory', rootpath+'/re')
         self._addExp('backgroundfile', '')
@@ -80,7 +80,7 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
     def configPropertyR(self, nm):
         '''helper function of options delegation, rad 2 degree'''
         rv = property(fget = lambda self: np.radians(getattr(self, nm)), 
-                      fset = lambda self, val: setattr(self, nm, np.radians(val)), 
+                      fset = lambda self, val: setattr(self, nm, np.degrees(val)), 
                       fdel = lambda self: delattr(self, nm))
         return rv    
     
@@ -199,11 +199,9 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
         if self.integrationspace == 'twotheta':
             self.tthorqmax = self.tthmax
             self.tthorqstep = self.tthstep
-            self.qmaxfromxrd = 4 * np.pi * np.sin(self.tthmax/2) / self.wavelength
         elif self.integrationspace == 'qspace':
             self.tthorqmax = self.qmax
             self.tthorqstep = self.qstep
-            self.qmaxfromxrd = self.qmax
         
         for sectionname in self.sections():
             for optionname in self.options(sectionname):
@@ -259,7 +257,7 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
             self.xrdtthstep = tthstep
         if np.abs(qstep - self.qstep)/qstep > 0.05:
             self.xrdqstep = qstep
-        return    
+        return
     
     def _getIntList(self, sectionname, optionname):
         '''helpler function that get a list of int from one string

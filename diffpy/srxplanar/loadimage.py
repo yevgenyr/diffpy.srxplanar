@@ -44,7 +44,7 @@ class LoadImage(object):
     def prepareCalculation(self):
         if (self.backgroundfile != '') and (os.path.exists(self.backgroundfile)):
             temp = fabio.openimage.openimage(self.backgroundfile)
-            self.backgroundpic = self.cropAndFlipImage(temp.data)
+            self.backgroundpic = self.flipImage(temp.data)
             self.backgroundenable = True
         else:
             self.backgroundenable = False
