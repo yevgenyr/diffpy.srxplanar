@@ -195,7 +195,7 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
         then write the values in the self.'options' to configParser container
         '''
         self._checkMax()
-        self._checkStep()
+        #self._checkStep()
         if self.integrationspace == 'twotheta':
             self.tthorqmax = self.tthmax
             self.tthorqstep = self.tthstep

@@ -64,6 +64,7 @@ class SrXPlanar(object):
         if type(configfile)==str:
             self.config.loadFromFile(configfile)
         #update instances
+        self.config.updateConfig()
         self.calculate.prepareCalculation()
         self.loadimage.prepareCalculation()
         self.mask.prepareCalculation()

@@ -6,6 +6,7 @@ setup.py
 SrXPlanar.egg-info/PKG-INFO
 SrXPlanar.egg-info/SOURCES.txt
 SrXPlanar.egg-info/dependency_links.txt
+SrXPlanar.egg-info/entry_points.txt
 SrXPlanar.egg-info/namespace_packages.txt
 SrXPlanar.egg-info/top_level.txt
 diffpy/__init__.py
