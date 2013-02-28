@@ -13,7 +13,7 @@
 #
 ##############################################################################
 
-"""Definition of __version__ and __date__ for the srsig2d package.
+"""Definition of __version__ and __date__ for this package.
 """
 
 # obtain version information
