@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 ##############################################################################
 #
-# diffpy.pdflive    by DANSE Diffraction group
+# diffpy.srxplanar  by DANSE Diffraction group
 #                   Simon J. L. Billinge
 #                   (c) 2012 Trustees of the Columbia University
 #                   in the City of New York.  All rights reserved.
@@ -15,8 +15,6 @@
 
 """Definition of __version__ and __date__ for the srsig2d package.
 """
-
-__id__ = "$Id$"
 
 # obtain version information
 from pkg_resources import get_distribution
