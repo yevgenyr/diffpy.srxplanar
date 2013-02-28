@@ -16,7 +16,7 @@
 """Definition of __version__ and __date__ for the srsig2d package.
 """
 
-__id__ = "$Id: version.py 2825 2009-03-09 04:33:12Z juhas $"
+__id__ = "$Id$"
 
 # obtain version information
 from pkg_resources import get_distribution
