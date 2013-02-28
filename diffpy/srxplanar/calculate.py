@@ -121,9 +121,9 @@ class Calculate(object):
                 intensity.append(np.mean(data))
                 std.append(np.sqrt(np.mean(datavar)/len(datavar)))
             intensity1 = np.zeros_like(self.tthorqoutput)
-            intensity1[:nrange] = np.array(intensity)
+            intensity1[:nrange] = np.array(intensity)[:nrange]
             std1 = np.zeros_like(self.tthorqoutput)
-            std1[:nrange] = np.array(std)
+            std1[:nrange] = np.array(std)[:nrange]
             rv = np.vstack([self.tthorqoutput, intensity1, std1])
         else:
             picflat = pic.ravel()[ind]
@@ -137,7 +137,7 @@ class Calculate(object):
                     data = data[ind1]
                 intensity.append(np.mean(data))
             intensity1 = np.zeros_like(self.tthorqoutput)
-            intensity1[:nrange] = np.array(intensity)
+            intensity1[:nrange] = np.array(intensity)[:nrange]
             rv = np.vstack([self.tthorqoutput, intensity1])
         return rv
     

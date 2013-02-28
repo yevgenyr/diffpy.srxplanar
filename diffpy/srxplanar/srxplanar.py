@@ -20,23 +20,23 @@ import scipy.sparse as ssp
 import os, sys
 #import time
 
-from srxplanarconfig import SrXPlanarConfig
+from srxplanarconfig import SrXplanarConfig
 from calculate import Calculate
 from loadimage import LoadImage
 from mask import Mask
 from saveresults import SaveResults
 
-class SrXPlanar(object):
+class SrXplanar(object):
     '''
     '''
     def __init__(self, srxplanarconfig=None):
         if srxplanarconfig!=None:
             if type(srxplanarconfig) == str:
-                self.config = SrXPlanarConfig(srxplanarconfig)
+                self.config = SrXplanarConfig(srxplanarconfig)
             else:
                 self.config = srxplanarconfig
         else:
-            self.config = SrXPlanarConfig()
+            self.config = SrXplanarConfig()
 
         #init modulars
         self.mask = Mask(self.config)
@@ -111,7 +111,7 @@ def main1(argv=sys.argv):
     #print argv
     #config = SrXPlanarConfig('test.cfg')
     #config.updateConfig()
-    xplanar = SrXPlanar('test_s_sr.cfg')
+    xplanar = SrXplanar('test_s_sr.cfg')
     xplanar.updateConfig()
     #sig2d.newImageFile('KFe2As2-00838.tif')
     xplanar.integrate('CeO2.tif')
@@ -122,9 +122,9 @@ def main():
     '''
     configfile = sys.argv[-1] if len(sys.argv)>1 else ''
     if os.path.exists(configfile):
-        xplanar = SrXPlanar(configfile)
+        xplanar = SrXplanar(configfile)
     elif os.path.exists('srxplanarconfig.cfg'):
-        xplanar = SrXPlanar('srxplanarconfig.cfg')
+        xplanar = SrXplanar('srxplanarconfig.cfg')
     else:
         print 'please provide config file'
     xplanar.integrateAll()

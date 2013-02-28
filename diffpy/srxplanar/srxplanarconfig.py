@@ -18,7 +18,7 @@ import ConfigParser
 import re
 import os
 
-class SrXPlanarConfig(ConfigParser.ConfigParser):
+class SrXplanarConfig(ConfigParser.ConfigParser):
     '''Class used for storing the configuration value. It bases on the configparser class provided by python core'''
     def __init__(self, filenames=None):
         ConfigParser.ConfigParser.__init__(self)
@@ -194,7 +194,7 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
         '''update the options value, 
         then write the values in the self.'options' to configParser container
         '''
-        self._checkMax()
+        #self._checkMax()
         #self._checkStep()
         if self.integrationspace == 'twotheta':
             self.tthorqmax = self.tthmax
@@ -245,7 +245,7 @@ class SrXPlanarConfig(ConfigParser.ConfigParser):
         qmatrix = 4 * np.pi * np.sin(tthmatrix / 2.0) / self.wavelength
         
         if np.max(tthmatrix)>self.tthmax:
-            self.tthmax = np.max(tthmatrix) + 0.05
+            self.tthmaxd = np.degrees(np.max(tthmatrix)) + 1.0
         if np.max(qmatrix)>self.qmax:
             self.qmax = np.max(qmatrix) + 0.1
         return
