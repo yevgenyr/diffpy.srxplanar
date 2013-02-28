@@ -20,47 +20,55 @@ import scipy.sparse as ssp
 import scipy.ndimage.filters as snf
 import scipy.ndimage.morphology as snm
 
-class Calculate(object):
-    '''provide calculate methods that do integration, transformations and calculation
+
+# Local Helper Routines ------------------------------------------------------
+
+def _configProperty(name):
+    '''Create a property that forwards self.name to self.config.name.
     '''
+    rv = property(fget = lambda self: getattr(self.config, name),
+            doc='attribute forwarded to self.config, read-only')
+    return rv
+
+# ----------------------------------------------------------------------------
+
+class Calculate(object):
+    '''provide calculate methods that do integration, transformations and
+    calculation
+    '''
+
+    # define configuration properties that are forwarded to self.config
+    xdimension = _configProperty('xdimension')
+    ydimension = _configProperty('ydimension')
+    xpixelsize = _configProperty('xpixelsize')
+    ypixelsize = _configProperty('ypixelsize')
+    xbeamcenter = _configProperty('xbeamcenter')
+    ybeamcenter = _configProperty('ybeamcenter')
+    rotation = _configProperty('rotation')
+    tilt = _configProperty('tilt')
+    distance = _configProperty('distance')
+    wavelength = _configProperty('wavelength')
+    integrationspace = _configProperty('integrationspace')
+    qmax = _configProperty('qmax')
+    qstep = _configProperty('qstep')
+    tthmax = _configProperty('tthmax')
+    tthstep = _configProperty('tthstep')
+    tthmaxd = _configProperty('tthmaxd')
+    tthstepd = _configProperty('tthstepd')
+    tthorqstep = _configProperty('tthorqstep')
+    tthorqmax = _configProperty('tthorqmax')
+    selfcorrenable = _configProperty('selfcorrenable')
+    uncertaintyenable = _configProperty('uncertaintyenable')
+    sacorrectionenable = _configProperty('sacorrectionenable')
+    polcorrectionenable = _configProperty('polcorrectionenable')
+    selfcorrenable = _configProperty('selfcorrenable')
+
+
     def __init__(self, p):
         #create parameter proxy, so that parameters can be accessed by self.parametername in read-only mode
         self.config = p
-        self.configlist = ['xdimension', 
-                           'ydimension', 
-                           'xpixelsize',
-                           'ypixelsize',
-                           'xbeamcenter',
-                           'ybeamcenter',
-                           'rotation',
-                           'tilt',
-                           'distance',
-                           'wavelength',
-                           'integrationspace', 
-                           'qmax', 
-                           'qstep', 
-                           'tthmax', 
-                           'tthstep',
-                           'tthmaxd', 
-                           'tthstepd',
-                           'tthorqstep',
-                           'tthorqmax',
-                           'selfcorrenable',
-                           'uncertaintyenable',
-                           'sacorrectionenable',
-                           'polcorrectionenable',
-                           'selfcorrenable',
-                           ]
-        for optionname in self.configlist:
-            setattr(self.__class__, optionname, self._configProperty(optionname))
         self.prepareCalculation()
         return
-    
-    def _configProperty(self, nm):
-        '''helper function of property delegation
-        '''
-        rv = property(fget = lambda self: getattr(self.config, nm))
-        return rv
     
     def prepareCalculation(self):
         self.xydimension = self.xdimension * self.ydimension
