@@ -3,31 +3,22 @@
 Now it only read the calibration results obtained from Fit2D.
 '''
 import re
+from diffpy.srxplanar.srxplanarconfig import _configPropertyRW
 
 class Calibration(object):
+    
+    # define configuration properties that are forwarded to self.config
+    fit2dconfig = _configPropertyRW('fit2dconfig')
+    xbeamcenter = _configPropertyRW('xbeamcenter')
+    ybeamcenter = _configPropertyRW('ybeamcenter')
+    rotationd = _configPropertyRW('rotationd')
+    tiltd = _configPropertyRW('tiltd')
+    distance = _configPropertyRW('distance')
+    wavelength = _configPropertyRW('wavelength')
+    
     def __init__(self, p):
         self.config = p
-        #create parameter proxy, so that options can be accessed by self.parametername in read/write mode
-        self.configlist = ['fit2dconfig',
-                           'xbeamcenter',
-                           'ybeamcenter',
-                           'wavelength',
-                           'distance',
-                           'rotationd',
-                           'tiltd',
-                           ]
-        for optionname in self.configlist:
-            setattr(self.__class__, optionname, self.configProperty(optionname))
-        calibration = Property()
         return
-    
-    def configProperty(self, nm):
-        '''helper function of property delegation, read/write access
-        '''
-        rv = property(fget = lambda self: getattr(self.config, nm),
-                      fset = lambda self, value: setattr(self.config, nm, value),
-                      fdel = lambda self: delattr(self, nm))
-        return rv
     
     def loadFromFit2D(self, filename):
         '''load parameters from fit2d calibration information. copy/paste the fit2d calibration 

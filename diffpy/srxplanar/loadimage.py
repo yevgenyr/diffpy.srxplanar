@@ -18,29 +18,25 @@ import fabio, fabio.openimage
 import os
 import fnmatch
 import sys
+from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
 class LoadImage(object):
+    
+    # define configuration properties that are forwarded to self.config
+    xdimension = _configPropertyR('xdimension')
+    ydimension = _configPropertyR('ydimension')
+    tifdirectory = _configPropertyR('tifdirectory')
+    includepattern = _configPropertyR('includepattern')
+    excludepattern = _configPropertyR('excludepattern')
+    fliphorizontal = _configPropertyR('fliphorizontal')
+    flipvertical = _configPropertyR('flipvertical')
+    backgroundfile = _configPropertyR('backgroundfile')
+
     def __init__(self, p):
         self.config = p
-        self.configlist = ['xdimension',
-                           'ydimension',
-                           'tifdirectory',
-                           'includepattern',
-                           'excludepattern',
-                           'fliphorizontal',
-                           'flipvertical',
-                           'backgroundfile',
-                           ]
-        for optionname in self.configlist:
-            setattr(self.__class__, optionname, self.configProperty(optionname))
         self.prepareCalculation()
         return
-    
-    def configProperty(self, nm):
-        '''helper function of options delegation'''
-        rv = property(fget = lambda self: getattr(self.config, nm))
-        return rv
-    
+
     def prepareCalculation(self):
         if (self.backgroundfile != '') and (os.path.exists(self.backgroundfile)):
             temp = fabio.openimage.openimage(self.backgroundfile)

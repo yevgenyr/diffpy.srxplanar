@@ -19,49 +19,38 @@ import numpy as np
 import scipy.sparse as ssp
 import scipy.ndimage.filters as snf
 import scipy.ndimage.morphology as snm
+from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
-
-# Local Helper Routines ------------------------------------------------------
-
-def _configProperty(name):
-    '''Create a property that forwards self.name to self.config.name.
-    '''
-    rv = property(fget = lambda self: getattr(self.config, name),
-            doc='attribute forwarded to self.config, read-only')
-    return rv
-
-# ----------------------------------------------------------------------------
 
 class Calculate(object):
     '''provide calculate methods that do integration, transformations and
     calculation
     '''
-
     # define configuration properties that are forwarded to self.config
-    xdimension = _configProperty('xdimension')
-    ydimension = _configProperty('ydimension')
-    xpixelsize = _configProperty('xpixelsize')
-    ypixelsize = _configProperty('ypixelsize')
-    xbeamcenter = _configProperty('xbeamcenter')
-    ybeamcenter = _configProperty('ybeamcenter')
-    rotation = _configProperty('rotation')
-    tilt = _configProperty('tilt')
-    distance = _configProperty('distance')
-    wavelength = _configProperty('wavelength')
-    integrationspace = _configProperty('integrationspace')
-    qmax = _configProperty('qmax')
-    qstep = _configProperty('qstep')
-    tthmax = _configProperty('tthmax')
-    tthstep = _configProperty('tthstep')
-    tthmaxd = _configProperty('tthmaxd')
-    tthstepd = _configProperty('tthstepd')
-    tthorqstep = _configProperty('tthorqstep')
-    tthorqmax = _configProperty('tthorqmax')
-    selfcorrenable = _configProperty('selfcorrenable')
-    uncertaintyenable = _configProperty('uncertaintyenable')
-    sacorrectionenable = _configProperty('sacorrectionenable')
-    polcorrectionenable = _configProperty('polcorrectionenable')
-    selfcorrenable = _configProperty('selfcorrenable')
+    xdimension = _configPropertyR('xdimension')
+    ydimension = _configPropertyR('ydimension')
+    xpixelsize = _configPropertyR('xpixelsize')
+    ypixelsize = _configPropertyR('ypixelsize')
+    xbeamcenter = _configPropertyR('xbeamcenter')
+    ybeamcenter = _configPropertyR('ybeamcenter')
+    rotation = _configPropertyR('rotation')
+    tilt = _configPropertyR('tilt')
+    distance = _configPropertyR('distance')
+    wavelength = _configPropertyR('wavelength')
+    integrationspace = _configPropertyR('integrationspace')
+    qmax = _configPropertyR('qmax')
+    qstep = _configPropertyR('qstep')
+    tthmax = _configPropertyR('tthmax')
+    tthstep = _configPropertyR('tthstep')
+    tthmaxd = _configPropertyR('tthmaxd')
+    tthstepd = _configPropertyR('tthstepd')
+    tthorqstep = _configPropertyR('tthorqstep')
+    tthorqmax = _configPropertyR('tthorqmax')
+    selfcorrenable = _configPropertyR('selfcorrenable')
+    uncertaintyenable = _configPropertyR('uncertaintyenable')
+    sacorrectionenable = _configPropertyR('sacorrectionenable')
+    polcorrectionenable = _configPropertyR('polcorrectionenable')
+    selfcorrenable = _configPropertyR('selfcorrenable')
 
 
     def __init__(self, p):

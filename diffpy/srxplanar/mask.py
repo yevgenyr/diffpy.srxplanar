@@ -19,6 +19,7 @@ import fabio.openimage
 import scipy.ndimage.filters as snf
 import scipy.ndimage.morphology as snm
 import os
+from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
 class Mask(object):
     '''module to provide mask support. it provide following functions:
@@ -33,17 +34,15 @@ class Mask(object):
     normalMask() & normalMaskDiag() to return normal mask
     selfcorrMask() & selfcorrMaskDiag() to return selfcorr mask
     '''
+    
+    xdimension = _configPropertyR('xdimension')
+    ydimension = _configPropertyR('ydimension')
+    fliphorizontal = _configPropertyR('fliphorizontal')
+    flipvertical = _configPropertyR('flipvertical')
+    maskfit2d = _configPropertyR('maskfit2d')
+    
     def __init__(self, p):
         self.config = p
-        self.configlist = ['xdimension',
-                           'ydimension',
-                           'fliphorizontal',
-                           'flipvertical',
-                           'maskfit2d',
-                           ]
-        
-        for optionname in self.configlist:
-            setattr(self.__class__, optionname, self.configProperty(optionname))
         self.prepareCalculation()
         return
     

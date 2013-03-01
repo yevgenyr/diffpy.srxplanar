@@ -16,29 +16,21 @@
 import numpy as np
 import scipy.io
 import os
+from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
 class SaveResults(object):
     '''module to save results into files
     '''
+    integrationspace = _configPropertyR('integrationspace')
+    method = _configPropertyR('method')
+    savedirectory = _configPropertyR('savedirectory')
+    gsasoutput = _configPropertyR('gsasoutput')
+    filenameplus = _configPropertyR('filenameplus')
+    
     def __init__(self, p):
         self.config = p
-        self.configlist = ['integrationspace',
-                           'method',
-                           'savedirectory',
-                           'gsasoutput',
-                           'filenameplus',
-                           ]
-        for optionname in self.configlist:
-            if hasattr(self.config, optionname):
-                setattr(self.__class__, optionname, self.configProperty(optionname))
         self.prepareCalculation()
         return
-    
-    def configProperty(self, nm):
-        '''helper function of property delegation
-        '''
-        rv = property(fget = lambda self: getattr(self.config, nm))
-        return rv
     
     def prepareCalculation(self):
         if not os.path.exists(self.savedirectory):

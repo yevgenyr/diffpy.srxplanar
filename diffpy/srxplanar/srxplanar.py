@@ -20,11 +20,11 @@ import scipy.sparse as ssp
 import os, sys
 #import time
 
-from srxplanarconfig import SrXplanarConfig
-from calculate import Calculate
-from loadimage import LoadImage
-from mask import Mask
-from saveresults import SaveResults
+from diffpy.srxplanar.srxplanarconfig import SrXplanarConfig
+from diffpy.srxplanar.calculate import Calculate
+from diffpy.srxplanar.loadimage import LoadImage
+from diffpy.srxplanar.mask import Mask
+from diffpy.srxplanar.saveresults import SaveResults
 
 class SrXplanar(object):
     '''
@@ -47,14 +47,6 @@ class SrXplanar(object):
         self.hasimage = False
         self.prepareCalculation()
         return
-    
-    @staticmethod
-    def configProperty(nm):
-        '''helper function that make delegate parameters from srsig2dconfig.
-        '''
-        rv = property(fget = lambda self: getattr(self.config, nm),
-                      fset = lambda self, value: setattr(self.config, nm, value))
-        return rv
     
     def updateConfig(self, configfile=None):
         '''update config, rerun all prepareCalculation() for each modulars,

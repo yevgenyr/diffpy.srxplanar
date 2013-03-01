@@ -18,6 +18,14 @@ import ConfigParser
 import re
 import os
 
+def _configPropertyRad(nm):
+    '''helper function of options delegation, rad 2 degree'''
+    rv = property(fget = lambda self: np.radians(getattr(self, nm)), 
+                  fset = lambda self, val: setattr(self, nm, np.degrees(val)), 
+                  fdel = lambda self: delattr(self, nm))
+    return rv
+
+
 class SrXplanarConfig(ConfigParser.ConfigParser):
     '''Class used for storing the configuration value. It bases on the configparser class provided by python core'''
     def __init__(self, filenames=None):
@@ -43,7 +51,7 @@ class SrXplanarConfig(ConfigParser.ConfigParser):
         self._addExp('qmax', 40.0)
         self._addExp('qstep', 0.04)
         for name in ['rotation', 'tilt', 'tthstep', 'tthmax']:
-            setattr(self.__class__, name, self.configPropertyR(name+'d'))
+            setattr(self.__class__, name, _configPropertyRad(name+'d'))
         
         self.add_section('Beamline')
         self._addBeamline('includepattern', '*.tif')
@@ -77,12 +85,7 @@ class SrXplanarConfig(ConfigParser.ConfigParser):
         self.loadConfig(filenames)
         return
     
-    def configPropertyR(self, nm):
-        '''helper function of options delegation, rad 2 degree'''
-        rv = property(fget = lambda self: np.radians(getattr(self, nm)), 
-                      fset = lambda self, val: setattr(self, nm, np.degrees(val)), 
-                      fdel = lambda self: delattr(self, nm))
-        return rv    
+    
     
     def _addOpt(self, sectionname, optionsname, optionsvalue):
         '''add options to section with automatically determined type
@@ -288,7 +291,25 @@ class SrXplanarConfig(ConfigParser.ConfigParser):
         else:
             strlist = []
         return strlist
-    
+
+# Helper Routines ------------------------------------------------------
+
+def _configPropertyR(name):
+    '''Create a property that forwards self.name to self.config.name.
+    '''
+    rv = property(fget = lambda self: getattr(self.config, name),
+            doc='attribute forwarded to self.config, read-only')
+    return rv
+
+def _configPropertyRW(name):
+    '''Create a property that forwards self.name to self.config.name.
+    '''
+    rv = property(fget = lambda self: getattr(self.config, nm), 
+                  fset = lambda self, value: setattr(self.config, nm, value),
+                  fdel = lambda self: delattr(self, nm),
+                  doc='attribute forwarded to self.config, read/write')
+    return rv
+
 if __name__=='__main__':
     a = SrXPlanarConfig()
     a.loadFromFile('test.cfg')
