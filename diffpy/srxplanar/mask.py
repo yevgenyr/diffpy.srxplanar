@@ -69,6 +69,9 @@ class Mask(object):
                 immask = fabio.openimage.openimage(self.maskfit2d)
                 rv = self.flipImage(immask.data)
         self.mask = (rv == 0)
+        #self.mask = np.zeros_like(rv)
+        #self.mask[::2,::2] = 1
+        #self.mask[1::2,1::2] = 1
         return self.mask
     
     def selfMase(self, pic):

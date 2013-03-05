@@ -80,8 +80,8 @@ class SrXplanar(object):
             self.filename = filename if filename!=None else 'output'
         
         if self.config.uncertaintyenable:
-            picvar = self.calculate.varianceLocal(self.pic)
             self.pic = self.pic * self.correction
+            picvar = self.calculate.varianceLocal(self.pic)
             self.chi = self.calculate.intensity(self.pic, picvar)
         else:
             self.pic = self.pic * self.correction
