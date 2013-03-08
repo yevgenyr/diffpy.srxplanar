@@ -73,12 +73,7 @@ class Mask(object):
                 rv = self.flipImage(immask.data)
         if np.sum(self.maskedges)!=0:
             rv = rv + self.edgeMask(self.maskedges)
-        #rv = self.edgeMaskHalf(rv)
-        #rv[0:100, 0:100] = 1
         self.mask = (rv == 0)
-        #self.mask = np.zeros_like(rv)
-        #self.mask[::2,::2] = 1
-        #self.mask[1::2,1::2] = 1
         return self.mask
     
     def selfMask(self, pic):
@@ -93,36 +88,9 @@ class Mask(object):
         picb = np.logical_not(picb)
         return picb
 
-    def edgeMaskHalf(self, curmask):
-        '''input: 1 for masked pixel
-        return: 1 for masked pixel
-        '''
-        curmask1 = np.zeros_like(curmask, dtype=bool) + curmask
-        curmask1[int(self.ydimension * 0.2):int(self.ydimension*0.8),
-                 int(self.xdimension * 0.2):int(self.xdimension*0.8)] = 0
-        curmask1[0,:] = 1
-        curmask1[-1,:] = 1
-        curmask1[:,0] = 1
-        curmask1[:,-1] = 1
-        ks = np.ones((3,3))
-        curmask2 = snm.binary_dilation(curmask1, ks)
-        
-        #curmask2 = np.logical_and(curmask2, np.logical_not(curmask1))
-        tth = (self.tthorqmatrix / self.tthorqstep) % 1.0
-        tth = tth > 0.5
-        mask = np.logical_and(tth, curmask2)
-        mask = np.logical_or(curmask, mask)
-        
-        '''from pylab import *
-        imshow(mask, interpolation='none')
-        show()'''
-        
-        return mask
-        
-
     def edgeMask(self, edges=None):
         '''number in edges stands for the number of masked pixels
-        left, right, top, bottom
+        left, right, top, bottom, corner
         return: 1 for masked pixel
         '''
         edges = self.maskedges if edges==None else edges
@@ -135,6 +103,17 @@ class Mask(object):
             rv[-edges[2]:,:] = 1
         if edges[3]!=0:
             rv[:edges[3]:,:] = 1
+        
+        ra = edges[4]
+        ball = np.zeros((ra*2, ra*2))
+        radi = (np.arange(ra*2)-ra).reshape((1, ra*2))**2 + \
+                (np.arange(ra*2)-ra).reshape((ra*2, 1)) ** 2
+        radi = np.sqrt(radi)
+        ind = radi > ra
+        rv[edges[3]:edges[3]+ra, edges[0]:edges[0]+ra] = ind[:ra,:ra]
+        rv[edges[3]:edges[3]+ra, -edges[1]-ra:-edges[1]] = ind[:ra,-ra:]
+        rv[-edges[2]-ra:-edges[2], edges[0]:edges[0]+ra] = ind[-ra:, :ra]
+        rv[-edges[2]-ra:-edges[2], -edges[1]-ra:-edges[1]] = ind[-ra:,-ra:]
         return rv
     
     def flipImage(self, pic):
