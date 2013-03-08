@@ -50,6 +50,7 @@ class Calculate(object):
     uncertaintyenable = _configPropertyR('uncertaintyenable')
     sacorrectionenable = _configPropertyR('sacorrectionenable')
     polcorrectionenable = _configPropertyR('polcorrectionenable')
+    polcorrectf = _configPropertyR('polcorrectf')
     selfcorrenable = _configPropertyR('selfcorrenable')
 
 
@@ -85,7 +86,7 @@ class Calculate(object):
             mask = np.logical_not(mask)
         tthorqmatrix = self.tthorqmatrix
         tthorqmatrix[mask] = 1000.0
-        tthorqmatrix = np.ceil(tthorqmatrix / self.tthorqstep).astype(int)
+        tthorqmatrix = np.rint(tthorqmatrix / self.tthorqstep).astype(int)
         tthorqflat = tthorqmatrix.ravel()
         
         self.ind = np.argsort(tthorqflat)
@@ -116,6 +117,8 @@ class Calculate(object):
                     data = data[ind1]
                     datavar = datavar[ind1]
                 intensity.append(np.mean(data))
+                #intensity.append(np.sum(data))
+                #intensity.append(len(data))
                 std.append(np.sqrt(np.mean(datavar)/len(datavar)))
             intensity1 = np.zeros_like(self.tthorqoutput)
             intensity1[:nrange] = np.array(intensity)[:nrange]
@@ -225,7 +228,7 @@ class Calculate(object):
         return:    2darray, float, correction matrix'''
         if self.sacorrectionenable:
             sourcezr = self.distance * np.cos(self.tilt)
-            correction = (self.dmatrix / sourcezr) ** 3
+            correction = (self.dmatrix / sourcezr) 
         else:
             correction = np.ones((self.ydimension, self.xdimension))
         return correction

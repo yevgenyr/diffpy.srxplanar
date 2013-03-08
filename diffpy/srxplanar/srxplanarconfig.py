@@ -70,7 +70,8 @@ class SrXplanarConfig(ConfigParser.ConfigParser):
         self._addOthers('polcorrectf', 0.95)
         self._addOthers('selfcorrenable', True)
         self._addOthers('gsasoutput', 'None') #'None', 'std', 'esd', 'fxye'
-        self._addOthers('filenameplus', '')        
+        self._addOthers('filenameplus', '')
+        self._addOthers('maskedges', [0,0,0,0])
         
         self.configlistexperiment = self.options('Experiment')
         self.configlistbeamline = self.options('Beamline')
@@ -78,7 +79,7 @@ class SrXplanarConfig(ConfigParser.ConfigParser):
         self.configlistexperiment.extend(['rotation', 'tilt', 'tthstep', 'tthmax'])
         
         self.strlistoption = set(['excludepattern'])
-        self.intlistoption = set([])
+        self.intlistoption = set(['maskedges'])
         self.floatlistoption = set([])
         
         #init from config file(s)

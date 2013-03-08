@@ -39,9 +39,9 @@ class SrXplanar(object):
             self.config = SrXplanarConfig()
 
         #init modulars
-        self.mask = Mask(self.config)
         self.loadimage = LoadImage(self.config)
         self.calculate = Calculate(self.config)
+        self.mask = Mask(self.config, self.calculate)
         self.saveresults = SaveResults(self.config)
         #init variables
         self.hasimage = False
