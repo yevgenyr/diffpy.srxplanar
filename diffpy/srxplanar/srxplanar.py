@@ -99,14 +99,11 @@ class SrXplanar(object):
             self.integrate(file1)
         return
     
-def main1(argv=sys.argv):
-    #print argv
-    #config = SrXPlanarConfig('test.cfg')
-    #config.updateConfig()
-    xplanar = SrXplanar('test_s_sr.cfg')
-    xplanar.updateConfig()
-    #sig2d.newImageFile('KFe2As2-00838.tif')
-    xplanar.integrate('CeO2.tif')
+def main1():
+    configfile = sys.argv[-1] if len(sys.argv)>1 else ''
+    if os.path.exists(configfile):
+        xplanar = SrXplanar(configfile)
+    xplanar.integrateAll()
     return
 
 def main():

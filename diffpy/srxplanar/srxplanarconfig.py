@@ -71,7 +71,7 @@ class SrXplanarConfig(ConfigParser.ConfigParser):
         self._addOthers('selfcorrenable', True)
         self._addOthers('gsasoutput', 'None') #'None', 'std', 'esd', 'fxye'
         self._addOthers('filenameplus', '')
-        self._addOthers('maskedges', [0,0,0,0])
+        self._addOthers('maskedges', [1,1,1,1,50])
         
         self.configlistexperiment = self.options('Experiment')
         self.configlistbeamline = self.options('Beamline')

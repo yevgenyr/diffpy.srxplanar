@@ -62,8 +62,8 @@ class Calculate(object):
     
     def prepareCalculation(self):
         self.xydimension = self.xdimension * self.ydimension
-        self.xr = (np.arange(self.xdimension, dtype=float) - self.xbeamcenter) * self.xpixelsize
-        self.yr = (np.arange(self.ydimension, dtype=float) - self.ybeamcenter) * self.ypixelsize
+        self.xr = (np.arange(self.xdimension, dtype=float) - self.xbeamcenter + 0.5) * self.xpixelsize
+        self.yr = (np.arange(self.ydimension, dtype=float) - self.ybeamcenter + 0.5) * self.ypixelsize
         self.dmatrix = self.genDistanceMatrix()
         
         if self.integrationspace == 'twotheta':
@@ -90,7 +90,8 @@ class Calculate(object):
         tthorqflat = tthorqmatrix.ravel()
         
         self.ind = np.argsort(tthorqflat)
-        sind = np.nonzero(np.diff(tthorqflat[self.ind]))[0] + 1
+        self.sortedtthorqindflat = tthorqflat[self.ind]
+        sind = np.nonzero(np.diff(self.sortedtthorqindflat))[0] + 1
         self.indlow = np.concatenate([[0], sind])
         self.indhigh = np.concatenate([sind, [self.xdimension*self.ydimension]])
         return self.ind, self.indlow, self.indhigh
@@ -98,47 +99,45 @@ class Calculate(object):
     def intensity(self, pic, picvar=None):
         '''pic should be corrected
         '''
-        
         ind = self.ind
         indlow = self.indlow
         indhigh = self.indhigh
         if self.uncertaintyenable:
             picflat = pic.ravel()[ind]
             picvarflat = picvar.ravel()[ind]
-            intensity = []
-            std = []
-            nrange = min(len(self.tthorq), len(indlow))
-            for i in xrange(nrange):
-                data = picflat[indlow[i]:indhigh[i]]
-                datavar = picvarflat[indlow[i]:indhigh[i]]
-                if self.selfcorrenable:
-                    medianint = np.median(data)
-                    ind1 = np.logical_and(medianint*0.2<data, data<medianint*5)
-                    data = data[ind1]
-                    datavar = datavar[ind1]
-                intensity.append(np.mean(data))
-                #intensity.append(np.sum(data))
-                #intensity.append(len(data))
-                std.append(np.sqrt(np.mean(datavar)/len(datavar)))
-            intensity1 = np.zeros_like(self.tthorqoutput)
-            intensity1[:nrange] = np.array(intensity)[:nrange]
-            std1 = np.zeros_like(self.tthorqoutput)
-            std1[:nrange] = np.array(std)[:nrange]
-            rv = np.vstack([self.tthorqoutput, intensity1, std1])
+            intensity = np.zeros_like(self.tthorqoutput)
+            std = np.zeros_like(self.tthorqoutput)
+            leng = len(intensity)
+            for i in xrange(len(indlow)):
+                dataind = self.sortedtthorqindflat[indlow[i]]
+                if dataind<leng:
+                    data = picflat[indlow[i]:indhigh[i]]
+                    datavar = picvarflat[indlow[i]:indhigh[i]]
+                    if self.selfcorrenable:
+                        medianint = np.median(data)
+                        ind1 = np.logical_and(medianint*0.2<data, data<medianint*5)
+                        data = data[ind1]
+                        datavar = datavar[ind1]
+                    intensity[dataind] = np.mean(data)
+                    std[dataind] = np.sqrt(np.mean(datavar)/len(datavar))
+            rv = np.vstack([self.tthorqoutput, intensity, std])
+            rv[np.isnan(rv)] = 0
         else:
             picflat = pic.ravel()[ind]
-            intensity = []
-            nrange = min(len(self.tthorq), len(indlow))
-            for i in xrange(nrange):
-                data = picflat[indlow[i]:indhigh[i]]
-                if self.selfcorrenable:
-                    medianint = np.median(data)
-                    ind1 = np.logical_and(medianint*0.2<data, data<medianint*5)
-                    data = data[ind1]
-                intensity.append(np.mean(data))
-            intensity1 = np.zeros_like(self.tthorqoutput)
-            intensity1[:nrange] = np.array(intensity)[:nrange]
-            rv = np.vstack([self.tthorqoutput, intensity1])
+            intensity = np.zeros_like(self.tthorqoutput)
+            std = np.zeros_like(self.tthorqoutput)
+            leng = len(intensity)
+            for i in xrange(len(indlow)):
+                dataind = self.sortedtthorqindflat[indlow[i]]
+                if dataind<leng:
+                    data = picflat[indlow[i]:indhigh[i]]
+                    if self.selfcorrenable:
+                        medianint = np.median(data)
+                        ind1 = np.logical_and(medianint*0.2<data, data<medianint*5)
+                        data = data[ind1]
+                    intensity[dataind] = np.mean(data)
+            rv = np.vstack([self.tthorqoutput, intensity])
+            rv[np.isnan(rv)] = 0    
         return rv
     
     def varianceLocal(self, pic):
@@ -168,7 +167,7 @@ class Calculate(object):
         sint = np.sin(self.tilt)
         cost = np.cos(self.tilt)
         sourcexr = self.distance * sint * cosr
-        sourceyr = self.distance * sint * sinr
+        sourceyr = -self.distance * sint * sinr
         sourcezr = self.distance * cost
         
         dmatrix = np.zeros((self.ydimension, self.xdimension), dtype=float)
@@ -187,14 +186,14 @@ class Calculate(object):
         sint = np.sin(self.tilt)
         cost = np.cos(self.tilt)
         sourcexr = self.distance * sint * cosr
-        sourceyr = self.distance * sint * sinr
+        sourceyr = -self.distance * sint * sinr
         sourcezr = self.distance * cost
         
         tthmatrix1 = np.zeros((self.ydimension,self.xdimension), dtype=float)
-        tthmatrix1 += (-(self.xr - sourcexr) * sint * cosr).reshape(1, self.xdimension)
-        tthmatrix1 += (-(self.yr - sourceyr) * sint * sinr).reshape(self.ydimension, 1)
-        tthmatrix1 += sourcezr * cost
-        tthmatrix = np.arccos(tthmatrix1 / self.dmatrix)
+        tthmatrix1 += ((-self.xr + sourcexr) * sourcexr).reshape(1, self.xdimension)
+        tthmatrix1 += ((-self.yr + sourceyr) * sourceyr).reshape(self.ydimension, 1)
+        tthmatrix1 += sourcezr * sourcezr
+        tthmatrix = np.arccos(tthmatrix1 / self.dmatrix / self.distance)
         return tthmatrix
     
     def genQMatrix(self):
@@ -205,14 +204,14 @@ class Calculate(object):
         sint = np.sin(self.tilt)
         cost = np.cos(self.tilt)
         sourcexr = self.distance * sint * cosr
-        sourceyr = self.distance * sint * sinr
+        sourceyr = -self.distance * sint * sinr
         sourcezr = self.distance * cost
         
         tthmatrix1 = np.zeros((self.ydimension,self.xdimension), dtype=float)
-        tthmatrix1 += (-(self.xr - sourcexr) * sint * cosr).reshape(1, self.xdimension)
-        tthmatrix1 += (-(self.yr - sourceyr) * sint * sinr).reshape(self.ydimension, 1)
-        tthmatrix1 += sourcezr * cost
-        tthmatrix = np.arccos(tthmatrix1 / self.dmatrix)
+        tthmatrix1 += ((-self.xr + sourcexr) * sourcexr).reshape(1, self.xdimension)
+        tthmatrix1 += ((-self.yr + sourceyr) * sourceyr).reshape(self.ydimension, 1)
+        tthmatrix1 += sourcezr * sourcezr
+        tthmatrix = np.arccos(tthmatrix1 / self.dmatrix / self.distance)
         Q = 4 * np.pi * np.sin(tthmatrix / 2.0) / self.wavelength
         return Q
     
