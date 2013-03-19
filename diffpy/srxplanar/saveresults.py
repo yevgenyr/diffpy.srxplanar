@@ -22,7 +22,6 @@ class SaveResults(object):
     '''module to save results into files
     '''
     integrationspace = _configPropertyR('integrationspace')
-    method = _configPropertyR('method')
     savedirectory = _configPropertyR('savedirectory')
     gsasoutput = _configPropertyR('gsasoutput')
     filenameplus = _configPropertyR('filenameplus')

@@ -44,7 +44,6 @@ class SrXplanar(object):
         self.mask = Mask(self.config, self.calculate)
         self.saveresults = SaveResults(self.config)
         #init variables
-        self.hasimage = False
         self.prepareCalculation()
         return
     
