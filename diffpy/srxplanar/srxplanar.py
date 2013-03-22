@@ -108,13 +108,23 @@ def main1():
 def main():
     '''read config and integrate all images
     '''
-    configfile = sys.argv[-1] if len(sys.argv)>1 else ''
-    if os.path.exists(configfile):
-        xplanar = SrXplanar(configfile)
-    elif os.path.exists('srxplanarconfig.cfg'):
-        xplanar = SrXplanar('srxplanarconfig.cfg')
-    else:
-        print 'please provide config file'
+    configfile = None
+    # start with a default configuration file if it exists
+    if os.path.isfile('srxplanarconfig.cfg'):
+        configfile = 'srxplanarconfig.cfg'
+    # use user's file no matter what she provided
+    if len(sys.argv) > 1:
+        configfile = sys.argv[1]
+    # check for -h, --help options; this should be replaced with optparse
+    helprequested = set(['-h', '--help']).intersection(sys.argv[1:])
+    # here configfile is None if the default does not exist
+    # and user did not give any argument
+    if configfile is None or helprequested:
+        print 'usage: %s [srxplanarconfig.cfg]'
+        print 'Please provide configuration file.'
+        sys.exit()
+    # configfile is set to something here
+    xplanar = SrXplanar(configfile)
     xplanar.integrateAll()
     return
 
