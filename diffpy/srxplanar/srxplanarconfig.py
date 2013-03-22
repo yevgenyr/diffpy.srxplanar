@@ -177,28 +177,29 @@ class SrXplanarConfig(ConfigParser.ConfigParser):
         '''
         for sectionname in self.sections():
             for optionname in self.options(sectionname):
-                if type(getattr(self, optionname)) == str:
-                    setattr(self, optionname, self.get(sectionname, optionname))
-                elif type(getattr(self, optionname)) == int:
-                    setattr(self, optionname, self.getint(sectionname, optionname))
-                elif type(getattr(self, optionname)) == float:
-                    setattr(self, optionname, self.getfloat(sectionname, optionname))
-                elif type(getattr(self, optionname)) == bool:
-                    setattr(self, optionname, self.getboolean(sectionname, optionname))
-                elif type(getattr(self, optionname)) == list:
-                    if optionname in self.strlistoption:      
-                        setattr(self, optionname, self._getStrList(sectionname, optionname))
-                    elif optionname in self.intlistoption:      
-                        setattr(self, optionname, self._getIntList(sectionname, optionname))
-                    elif optionname in self.floatlistoption:      
-                        setattr(self, optionname, self._getFloatList(sectionname, optionname))
+                if hasattr(self, optionname):
+                    if type(getattr(self, optionname)) == str:
+                        setattr(self, optionname, self.get(sectionname, optionname))
+                    elif type(getattr(self, optionname)) == int:
+                        setattr(self, optionname, self.getint(sectionname, optionname))
+                    elif type(getattr(self, optionname)) == float:
+                        setattr(self, optionname, self.getfloat(sectionname, optionname))
+                    elif type(getattr(self, optionname)) == bool:
+                        setattr(self, optionname, self.getboolean(sectionname, optionname))
+                    elif type(getattr(self, optionname)) == list:
+                        if optionname in self.strlistoption:      
+                            setattr(self, optionname, self._getStrList(sectionname, optionname))
+                        elif optionname in self.intlistoption:      
+                            setattr(self, optionname, self._getIntList(sectionname, optionname))
+                        elif optionname in self.floatlistoption:      
+                            setattr(self, optionname, self._getFloatList(sectionname, optionname))
         return
     
     def updateConfig(self):
         '''update the options value, 
         then write the values in the self.'options' to configParser container
         '''
-        #self._checkMax()
+        self._checkMax()
         #self._checkStep()
         if self.integrationspace == 'twotheta':
             self.tthorqmax = self.tthmax
@@ -209,13 +210,14 @@ class SrXplanarConfig(ConfigParser.ConfigParser):
         
         for sectionname in self.sections():
             for optionname in self.options(sectionname):
-                if type(getattr(self, optionname)) in set([str, int, bool, float]):
-                    self.set(sectionname, optionname, str(getattr(self, optionname)))
-                elif type(getattr(self, optionname)) == list:
-                    liststring = ''
-                    for listitem in getattr(self, optionname):
-                        liststring = liststring + str(listitem) + ', '
-                    self.set(sectionname, optionname, liststring[:-2])
+                if hasattr(self, optionname):
+                    if type(getattr(self, optionname)) in set([str, int, bool, float]):
+                        self.set(sectionname, optionname, str(getattr(self, optionname)))
+                    elif type(getattr(self, optionname)) == list:
+                        liststring = ''
+                        for listitem in getattr(self, optionname):
+                            liststring = liststring + str(listitem) + ', '
+                        self.set(sectionname, optionname, liststring[:-2])
         return
             
     def writeConfig(self, filename):
@@ -248,10 +250,8 @@ class SrXplanarConfig(ConfigParser.ConfigParser):
         tthmatrix = np.arccos(tthmatrix1 / dmatrix)
         qmatrix = 4 * np.pi * np.sin(tthmatrix / 2.0) / self.wavelength
         
-        if np.max(tthmatrix)>self.tthmax:
-            self.tthmaxd = np.degrees(np.max(tthmatrix)) + 1.0
-        if np.max(qmatrix)>self.qmax:
-            self.qmax = np.max(qmatrix) + 0.1
+        self.tthmaxd = np.degrees(np.max(tthmatrix)) + 1.0
+        self.qmax = np.max(qmatrix) + 0.1
         return
     
     def _checkStep(self):
