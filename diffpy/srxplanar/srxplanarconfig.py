@@ -72,6 +72,7 @@ class SrXplanarConfig(ConfigParser.ConfigParser):
         self._addOthers('gsasoutput', 'None') #'None', 'std', 'esd', 'fxye'
         self._addOthers('filenameplus', '')
         self._addOthers('maskedges', [1,1,1,1,50])
+        self._addOthers('selfmask', []) #'deadpixel', 'spot'
         
         self.configlistexperiment = self.options('Experiment')
         self.configlistbeamline = self.options('Beamline')

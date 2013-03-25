@@ -62,10 +62,13 @@ class SrXplanar(object):
         self.saveresults.prepareCalculation()
         return
     
-    def prepareCalculation(self):
+    def prepareCalculation(self, pic=None):
         '''prepare data used in calculation
         '''
         masknormal = self.mask.normalMask()
+        if pic!=None:
+            selfmask = self.mask.selfMask(pic)
+            masknormal *= selfmask
         self.correction = self.calculate.genCorrectionMatrix()
         self.calculate.genIntegrationInds(masknormal)
         return
@@ -75,9 +78,11 @@ class SrXplanar(object):
             self.pic = self.loadimage.loadImage(image)
             self.filename = image
         else:
-            self.pic = image
+            self.pic = self.loadimage.flipImage(image)
             self.filename = filename if filename!=None else 'output'
-        
+        if self.config.selfmask!=[]:
+            self.prepareCalculation(self.pic)
+        #calculate
         if self.config.uncertaintyenable:
             self.pic = self.pic * self.correction
             picvar = self.calculate.varianceLocal(self.pic)

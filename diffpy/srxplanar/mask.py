@@ -41,6 +41,7 @@ class Mask(object):
     flipvertical = _configPropertyR('flipvertical')
     maskfit2d = _configPropertyR('maskfit2d')
     maskedges = _configPropertyR('maskedges')
+    selfmask = _configPropertyR('selfmask')
     
     def __init__(self, p, cal):
         self.config = p
@@ -70,14 +71,25 @@ class Mask(object):
         if self.maskfit2d != None:
             if os.path.exists(self.maskfit2d):
                 immask = fabio.openimage.openimage(self.maskfit2d)
-                rv = self.flipImage(immask.data)
+                #rv = self.flipImage(immask.data)
+                rv = immask.data
         if np.sum(self.maskedges)!=0:
             rv = rv + self.edgeMask(self.maskedges)
         self.mask = (rv == 0)
         return self.mask
     
-    def selfMask(self, pic):
-        '''return: 0 for masked pixel
+    def selfMask(self, pic, size=5, r=1.2):
+        mask = np.ones(pic.shape)
+        if 'deadpixel' in self.selfmask:
+            mask *= self.deadPixelMask(pic)
+        if 'spot' in self.selfmask:
+            mask *= self.spotMask(pic, size, r)
+        #mask = self.flipImage(mask)
+        return mask
+    
+    def deadPixelMask(self, pic):
+        '''mask the dead pixel
+        return: 0 for masked pixel
         '''
         avgpic = np.average(pic)
         ks = np.ones((5,5))
@@ -87,7 +99,16 @@ class Mask(object):
         picb = snm.binary_erosion(picb, structure=ks1)
         picb = np.logical_not(picb)
         return picb
-
+    
+    def spotMask(self, pic, size=5, r = 1.2):
+        '''mask the spot in image
+        return: 0 for masked pixel
+        '''
+        rank = snf.rank_filter(pic, -size, size)
+        ind = snm.binary_dilation(pic>rank*r, np.ones((3,3)))
+        ind = np.logical_not(ind)
+        return ind
+    
     def edgeMask(self, edges=None):
         '''number in edges stands for the number of masked pixels
         left, right, top, bottom, corner
