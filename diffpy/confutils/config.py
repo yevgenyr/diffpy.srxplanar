@@ -50,10 +50,27 @@ class ConfigBase(object):
                        'r':'required',
                        'dest':'dest',
                        'const':'const'}
-    #optional args: 'ctrl':[True, True], Set False to hide thie options in [self.config, self.args]
+    '''optional args: 
+        'args': default is 'a'
+            if 'a', this option will be available in self.args
+            if 'n', this option will not be available in self.args
+        'config': default is 'a'
+            if 'f', this option will present in self.config and be written to config file only in full mode
+            if 'a', this option will present in self.config and be written to config file both in full and short mode
+            if 'n', this option will not present in self.config
+        'header', default is 'a'
+            if 'f', this option will be written to header only in full mode
+            if 'a', this option will be written to header both in full and short mode
+            if 'n', this option will not be written to header
+        so in short mode, all options with 'a' will be written, in full mode, all options with 'a' or 'f' will be written
+    '''
     
     #examples, overload it
     _optdatalist = [
+        ['configfile',{'sec':'Control', 'config':'n', 'header':'n',
+            's':'c',
+            'h':'name of input config file',
+            'd':'',}],
         ['fit2dconfig',{'sec':'Experiment',
             's':'fit2d',
             'h':'fit2d calibration file name. It contains the calibration results copy from fit2d cmd windows',
@@ -110,7 +127,7 @@ class ConfigBase(object):
             key = opt[0]
             self._addOpt(key)
         #degree to rad
-        
+        self._additionalInit()
         #updata config
         self.updateConfig(filename, args, **kwargs)
         return
@@ -156,7 +173,9 @@ class ConfigBase(object):
             elif type(value)==bool:
                 opttype = 'bool'
             elif type(value)==list:
-                if type(value[0])==str:
+                if len(value)==0:
+                    opttype = 'strlist'
+                elif type(value[0])==str:
                     opttype = 'strlist'
                 elif type(value[0])==float:
                     opttype = 'floatlist'
@@ -183,27 +202,34 @@ class ConfigBase(object):
         '''
         optdata = self._optdata[optname]
         opttype = self._getType(optname)
-        if opttype.endswith('list'):
-            self.config.set(optdata['sec'], optname, str(optdata['d'])[1:-1])
-        else:
-            self.config.set(optdata['sec'], optname, optdata['d'])
-        #add to self.configlist
-        self._configlist[optdata['sec']].append(optname)
+        
         #add to self.'optname'
         setattr(self, optname, optdata['d'])
-        #transform optdata to a dict that can pass to add_argument method
-        pargs = dict()
-        for key in optdata.keys():
-            if self._optdatanamedic.has_key(key):
-                pargs[self._optdatanamedic[key]] = optdata[key]
-        #replace currentdir in default to os.getcwd()
-        if pargs['default'] =='currentdir':
-            pargs['default'] == os.getcwd()
-        #add args
-        if optdata.has_key('s'):
-            self.args.add_argument('--'+optname, '-'+optdata['s'], **pargs)
-        else:
-            self.args.add_argument('--'+optname, **pargs)
+        
+        #add to self.config
+        secname =  optdata['sec'] if optdata.has_key('sec') else 'Others'
+        self._configlist[secname].append(optname)
+        if optdata.get('config', 'a')!='n':
+            if opttype.endswith('list'):
+                self.config.set(secname, optname, str(optdata['d'])[1:-1])
+            else:
+                self.config.set(secname, optname, str(optdata['d']))
+        
+        #add to self.args
+        if optdata.get('args', 'a')!='n':
+            #transform optdata to a dict that can pass to add_argument method
+            pargs = dict()
+            for key in optdata.keys():
+                if self._optdatanamedic.has_key(key):
+                    pargs[self._optdatanamedic[key]] = optdata[key]
+            #replace currentdir in default to os.getcwd()
+            if pargs['default'] =='currentdir':
+                pargs['default'] == os.getcwd()
+            #add args
+            if optdata.has_key('s'):
+                self.args.add_argument('--'+optname, '-'+optdata['s'], **pargs)
+            else:
+                self.args.add_argument('--'+optname, **pargs)
         return
     
     
@@ -376,17 +402,52 @@ class ConfigBase(object):
             self._updateSelf()
         return
     
-    def writeConfig(self, filename):
+    def writeConfig(self, filename, mode='short'):
         '''write config to file
         
         param filename: string, name of file
+        param mode: string, 'short' or 'full' ('s' or 'f'). 
+            if short, options with 'config'=='f' will not be written into config file
+            if full, all available options in self.config will be written to config file
         '''
         self._updateSelf()
-        conffile = open(filename, 'w')
-        self.config.write(conffile)
-        conffile.close()
+        mcond = lambda optname: self._optdata[optname].get('config', 'a')=='a' if mode.startswith('s')\
+            else lambda optname: self._optdata[optname].get('config', 'a')!='n'
+            
+        fp = open(filename, 'wb')        
+        for section in self.config._sections:
+            fp.write("[%s]\r\n" % section)
+            for (key, value) in self.config._sections[section].items():
+                if (key != "__name__") and mcond(key):
+                    fp.write("%s = %s\r\n" %
+                             (key, str(value).replace('\r\n', '\r\n\t')))
+            fp.write("\r\n")
+        fp.close()
         return
-
+    
+    def getHeader(self, title=None, mode='short'):
+        '''get a header of configurations values, by default, all options are written to a header, 
+        It can be disabled by set 'header' to False in self._optdata
+        
+        return: string, lines that can be directly writen to a text file
+        '''
+        
+        lines = []
+        title = 'Configuration information'
+        lines.append('--------------------------------------')
+        #func decide if wirte the option to header according to mode
+        mcond = lambda optname: self._optdata[optname].get('header', 'a')=='a' if mode.startswith('s')\
+            else lambda optname: self._optdata[optname].get('header', 'a')!='n'
+        
+        for secname in self._configlist.keys():
+            lines.append('['+secname+']')
+            for optname in self._configlist[secname]:
+                if mcond(optname):
+                    lines.append(configname + ':  ' + str(getattr(self.config, configname)))
+            lines.append('--------------------------------------')
+        rv = "\r\n".join(lines) + "\r\n"
+        return rv
+        
 # Helper Routines ------------------------------------------------------
 
 def _configPropertyR(name):

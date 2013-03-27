@@ -133,5 +133,5 @@ class SaveResults(object):
         for configname in self.config.configlistexperiment:
             lines.append(configname + ':  ' + str(getattr(self.config, configname)))
         lines.append('--------------------------------------')
-        rv = "\n".join(lines) + "\n"
+        rv = "\r\n".join(lines) + "\r\n"
         return rv
