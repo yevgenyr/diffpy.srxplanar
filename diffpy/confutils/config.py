@@ -13,7 +13,7 @@
 #
 ##############################################################################
 
-'''for python 2.6, argparse is required
+'''for python 2.6, argparse and orderedDict is required, install them with easy_install
 '''
 
 
@@ -22,6 +22,10 @@ import ConfigParser
 import re, os, sys
 from functools import partial
 import argparse
+if sys.version_info < (2,7):
+    from ordereddict import OrderedDict
+else:
+    from collections import OrderedDict
 
 def _configPropertyRad(nm):
     '''helper function of options delegation, rad 2 degree'''
@@ -36,7 +40,7 @@ class ConfigBase(object):
     config: ConfigParser.ConfigParser
     args: argparse
     '''
-    config = ConfigParser.ConfigParser()
+    config = ConfigParser.ConfigParser(dict_type = OrderedDict)
     args = argparse.ArgumentParser(description='SrSig2d Configuration')
     
     # optdata contains these keys:
@@ -164,7 +168,7 @@ class ConfigBase(object):
     #example, overload it
     def _additionalPostProcessing(self, **kwargs):
         '''post processing after parse args or kwargs, this method is called after 
-        self._postPocessing
+        in self._postPocessing and before creating config file action  
         '''
         #Overload it!
         return
@@ -416,35 +420,6 @@ class ConfigBase(object):
                 self.config.read(filename)
                 self._copyConfigtoSelf()
                 self._updateSelf()
-                self._loadFromFit2D(self.fit2dconfig)
-        return
-    
-    def _loadFromFit2D(self, filename):
-        '''load parameters from fit2d calibration information. copy/paste the fit2d calibration 
-        results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
-        '''
-        def findFloat(line):
-            temp = re.findall('[-+]?\d*\.\d+|[-+]?\d+', line)
-            return map(float, temp)
-        if filename != None:
-            if os.path.exists(filename):
-                f = open(filename, 'r')
-                lines = f.readlines()
-                for line in lines:
-                    if re.search('Refined Beam centre.*pixels', line):
-                        self.xbeamcenter, self.ybeamcenter = findFloat(line)
-                    elif re.search('Refined sample to detector distance', line):
-                        self.distance = findFloat(line)[0]
-                    elif re.search('Refined wavelength', line):
-                        self.wavelength = findFloat(line)[0]
-                    elif re.search('Refined tilt plane rotation angle', line):
-                        self.rotationd = findFloat(line)[0]
-                    elif re.search('Refined tilt angle', line):
-                        self.tiltd = findFloat(line)[0]
-                    elif re.search('Refined wavelength', line):
-                        self.wavelength = findFloat(line)[0]
-                f.close()
-                self._updateSelf()
         return
     
     def updateConfig(self, filename=None, args=None, **kwargs):
@@ -462,6 +437,7 @@ class ConfigBase(object):
             rv = self.parseKwargs(**kwargs)
         if (filename==None)and(args==None)and(kwargs=={}):
             rv = self._updateSelf()
+        self._postProcessing(**kwargs)
         return rv
     
     def writeConfig(self, filename, mode='short'):
@@ -519,13 +495,14 @@ class ConfigBase(object):
         if (self.configfile!='')and(self.configfile!=None):
             self.parseConfigFile(filename=self.configfile)
             self.configfile = ''
+        self._additionalPostProcessing(**kwargs)
+        
         if (self.createconfig!='')and(self.createconfig!=None):
             self.writeConfig(self.createconfig, 'short')
             self.createconfig = ''
         if (self.createconfigfull!='')and(self.createconfigfull!=None):
             self.writeConfig(self.createconfigfull, 'full')
             self.createconfigfull = ''
-        self._additionalPostProcessing(**kwargs)
         return
     
     
