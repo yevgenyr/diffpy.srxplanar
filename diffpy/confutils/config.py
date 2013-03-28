@@ -40,7 +40,7 @@ class ConfigBase(object):
     args = argparse.ArgumentParser(description='SrSig2d Configuration')
     
     # optdata contains these keys:
-    # full(f), short(s), help(h), type(t), action(a), nargs(n), default(d), choices(c), required(r), dest, const
+    # full(f, positional), short(s), help(h), type(t), action(a), nargs(n), default(d), choices(c), required(r), dest, const
     _optdatanamedic = {'h':'help',
                        't':'type',
                        'a':'action',
@@ -48,8 +48,8 @@ class ConfigBase(object):
                        'd':'default',
                        'c':'choices',
                        'r':'required',
-                       'dest':'dest',
-                       'const':'const'}
+                       'de':'dest',
+                       'co':'const'}
     '''optional args: 
         'args': default is 'a'
             if 'a', this option will be available in self.args
@@ -64,17 +64,27 @@ class ConfigBase(object):
             if 'n', this option will not be written to header
         so in short mode, all options with 'a' will be written, in full mode, all options with 'a' or 'f' will be written
     '''
-    
     #examples, overload it
+    _optdatalistpre = []
+    
     _optdatalist = [
         ['configfile',{'sec':'Control', 'config':'n', 'header':'n',
             's':'c',
             'h':'name of input config file',
             'd':'',}],
-        ['fit2dconfig',{'sec':'Experiment',
-            's':'fit2d',
-            'h':'fit2d calibration file name. It contains the calibration results copy from fit2d cmd windows',
+        ['createconfig',{'sec':'Control', 'config':'n', 'header':'n',
+            'h':'create a config file according to default or current values',
             'd':'',}],
+        ['createconfigfull',{'sec':'Control', 'config':'n', 'header':'n',
+            'h':'create a full configurable config file',
+            'd':'',}],
+        ]
+    #examples, overload it
+    _optdatalistext = [
+        ['tifdirectory',{'sec':'Experiment', 'header':'n',
+            's':'tifdir',
+            'h':'directory of raw tif files',
+            'd':'currentdir',}],
         ['integrationspace',{'sec':'Experiment',
             'h':'integration space, could be twotheta or qspace',
             'd':'twotheta',
@@ -97,9 +107,13 @@ class ConfigBase(object):
             'd':['*.dark.tif', '*.raw.tif'],}],
         ['fliphorizontal',{'sec':'Beamline',
             'h':'filp the image horizontally',
+            'n':'?',
+            'co':True,
             'd':False,}],
         ['regulartmatrixenable',{'sec':'Others',
             'h':'normalize tmatrix in splitting method',
+            'n':'?',
+            'co':True,
             'd':False,}],
         ['maskedges',{'sec':'Others',
             'h':'mask the edge pixels, first four means the number of pixels masked in each edge \
@@ -108,7 +122,6 @@ class ConfigBase(object):
             'd':[1,1,1,1,50],}],
         ]
     
-    _optdata = dict(_optdatalist)
     #options that consist of list of value
     #examples, overload it
     _listoptdata = {
@@ -120,15 +133,21 @@ class ConfigBase(object):
     #configlist, store the options name for each sections
     _configlist = {} 
     
-    #example, overload it
+    #default config file path and name, overload it for your config class
+    _defaultconfigpath = ['config.cfg']
+    
     def __init__(self, filename=None, args=None, **kwargs):
+        self._optdatalist = self._optdatalistpre + self._optdatalist
+        self._optdatalist.extend(self._optdatalistext)
+        self._optdata = dict(self._optdatalist)
         self._detectAddSections()
         for opt in self._optdatalist:
             key = opt[0]
             self._addOpt(key)
         #degree to rad
         self._additionalInit()
-        #updata config
+        #updata config, first detect if a default config should be load
+        filename = self._findDefaultConfigFile(filename, args, **kwargs)
         self.updateConfig(filename, args, **kwargs)
         return
     
@@ -143,15 +162,55 @@ class ConfigBase(object):
         return
     
     #example, overload it
-    def _updateSelf(self, optnames=None):
+    def _additionalPostProcessing(self, **kwargs):
+        '''post processing after parse args or kwargs, this method is called after 
+        self._postPocessing
+        '''
+        #Overload it!
+        return
+    
+    #example, overload it
+    def _additionalUpdataSelf(self, **kwargs):
+        '''additional process called in self._updateSelf, this method is called before 
+        self._copySelftoConfig()
+        '''
+        return
+    
+    ##########################################################################
+    
+    def _updateSelf(self, optnames=None, **kwargs):
         '''update the options value, then copy the values in the self.'options' to self.config
         param optnames: str or list of str, name of options whose value has been changed, if None, update all options
         '''
         #so some check right here
-        pass
+        self._additionalUpdataSelf(**kwargs)
         #copy value to self.config
         self._copySelftoConfig(optnames)
         return
+    
+    
+    def _findDefaultConfigFile(self, filename=None, args=None, **kwargs):
+        '''find default config file, if any config is specified in filename/args/kwargs
+        then return the 
+        
+        return: name of config file if found, otherwise None 
+        '''
+        rv = None
+        flag = False
+        if (filename!=None):
+            flag == True
+            rv = filename
+        if (args!=None):
+            if ('--configfile' in args) or ('-c' in args):
+                flag = True
+        if kwargs.has_key('configfile'):
+                flag = True
+        if not flag:
+            for dconf in self._defaultconfigpath:
+                if (os.path.exists(dconf))and(rv==None):
+                    rv = dconf
+        return rv
+            
     
     def _getType(self, optname):
         '''detect the type of option
@@ -203,6 +262,10 @@ class ConfigBase(object):
         optdata = self._optdata[optname]
         opttype = self._getType(optname)
         
+        #replace currentdir in default to os.getcwd()
+        if optdata['d'] =='currentdir':
+            optdata['d'] = os.getcwd()
+        
         #add to self.'optname'
         setattr(self, optname, optdata['d'])
         
@@ -222,11 +285,11 @@ class ConfigBase(object):
             for key in optdata.keys():
                 if self._optdatanamedic.has_key(key):
                     pargs[self._optdatanamedic[key]] = optdata[key]
-            #replace currentdir in default to os.getcwd()
-            if pargs['default'] =='currentdir':
-                pargs['default'] == os.getcwd()
+            pargs['default'] = argparse.SUPPRESS
             #add args
-            if optdata.has_key('s'):
+            if optdata.has_key('f'):
+                self.args.add_argument(optname, **pargs)
+            elif optdata.has_key('s'):
                 self.args.add_argument('--'+optname, '-'+optdata['s'], **pargs)
             else:
                 self.args.add_argument('--'+optname, **pargs)
@@ -322,21 +385,20 @@ class ConfigBase(object):
         
         param pargs: list of string, pargs to parse, usually be sys.argv
         '''
-        changedargs = filter(lambda args: args.startswith('-'), pargs)
-        changedargs = map(lambda arg: arg.replace('-', ''), changedargs)
+        obj = self.args.parse_args(pargs)
+        changedargs = obj.__dict__.keys()
+        for optname in changedargs:
+            if self._optdata.has_key(optname):
+                setattr(self, optname, getattr(obj, optname))
+        #update self
         if len(changedargs)>0:
-            obj = self.args.parse_args(pargs)
-            for optname in changedargs:
-                if self._optdata.has_key(optname):
-                    setattr(self, optname, getattr(obj, optname))
-            #update self
             self._updateSelf(changedargs)
-        return
+        return obj
     
     def parseKwargs(self, **kwargs):
         '''update self.'optname' values according to the kwargs
         '''
-        if kwargs:
+        if kwargs!={}:
             changedargs = []
             for optname, optvalue in kwargs.iteritems():
                 if self._optdata.has_key(optname):
@@ -393,14 +455,14 @@ class ConfigBase(object):
         param **kwargs: you can use like 'xbeamcenter=1024' to update the value of xbeamcenter
         '''
         if filename!=None:
-            self.parseConfigFile(filename)
+            rv = self.parseConfigFile(filename)
         if args!=None:
-            self.parseArgs(args)
+            rv = self.parseArgs(args)
         if kwargs!={}:
-            self.parseKwargs(**kwargs)
-        if (filename==None)and(args==None)and(kwargs==None):
-            self._updateSelf()
-        return
+            rv = self.parseKwargs(**kwargs)
+        if (filename==None)and(args==None)and(kwargs=={}):
+            rv = self._updateSelf()
+        return rv
     
     def writeConfig(self, filename, mode='short'):
         '''write config to file
@@ -448,6 +510,26 @@ class ConfigBase(object):
         rv = "\r\n".join(lines) + "\r\n"
         return rv
     
+    def _postProcessing(self, **kwargs):
+        '''post processing after parse args or kwargs or config file
+        this method is called in self.updateConfig, after all file/args/kwargs
+        some options are reset to their default to pervent process twice
+        '''
+        #read a configfile if specified in args or kwargs
+        if (self.configfile!='')and(self.configfile!=None):
+            self.parseConfigFile(filename=self.configfile)
+            self.configfile = ''
+        if (self.createconfig!='')and(self.createconfig!=None):
+            self.writeConfig(self.createconfig, 'short')
+            self.createconfig = ''
+        if (self.createconfigfull!='')and(self.createconfigfull!=None):
+            self.writeConfig(self.createconfigfull, 'full')
+            self.createconfigfull = ''
+        self._additionalPostProcessing(**kwargs)
+        return
+    
+    
+        
         
 # Helper Routines ------------------------------------------------------
 
