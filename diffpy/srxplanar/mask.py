@@ -39,57 +39,85 @@ class Mask(object):
     ydimension = _configPropertyR('ydimension')
     fliphorizontal = _configPropertyR('fliphorizontal')
     flipvertical = _configPropertyR('flipvertical')
-    maskfit2d = _configPropertyR('maskfit2d')
     maskedges = _configPropertyR('maskedges')
-    selfmask = _configPropertyR('selfmask')
+    wavelength = _configPropertyR('wavelength')
+    addmask = _configPropertyR('addmask')
     
-    def __init__(self, p, cal):
+    def __init__(self, p):
         self.config = p
-        self.calculate = cal
         self.prepareCalculation()
         return
     
     def prepareCalculation(self):
-        self.tthorqmatrix = self.calculate.tthorqmatrix
-        self.tthorqstep = self.calculate.tthorqstep
+        self.xydimension = self.xdimension * self.ydimension
         return
-    
-    def configProperty(self, nm):
-        '''helper function of property delegation
-        '''
-        rv = property(fget = lambda self: getattr(self.config, nm))
-        return rv
-    
-    def normalMask(self):
+
+    def normalMask(self, addmask = None):
         """create a mask file which indicate the dead pixel
-        return a 2d ndarray with boolean (1 stands for unmasked pixel, 0 stands for masked pixel)
+        return a 2d ndarray with boolean (1 stands for masked pixel)
         
-        fit2d:read the fit2d mask file
+        param addmask: list of string
         """
+        addmask = self.addmask if addmask==None else addmask
+        
+        #right here, '1' stands for masked pixel, in the actual mask array, '1' stands for unmasked pixel
         rv = np.zeros((self.ydimension, self.xdimension))
-        #right here, '1' stands for masked pixel, in the actual mask array, '1' stands for unmasked pixel 
-        if self.maskfit2d != None:
-            if os.path.exists(self.maskfit2d):
-                immask = fabio.openimage.openimage(self.maskfit2d)
-                #rv = self.flipImage(immask.data)
-                rv = immask.data
+        #fit2d mask
+        maskfit2ds = filter(lambda msk: msk.endswith('.msk'), addmask)
+        if len(maskfit2ds)>0:
+            for maskfit2d in maskfit2ds:
+                if os.path.exists(maskfit2d):
+                    immask = fabio.openimage.openimage(maskfit2d)
+                    rv += immask.data
+        #.npy mask
+        npymasks = filter(lambda msk: msk.endswith('.npy'), addmask)
+        if len(npymasks)>0:
+            for npymask in npymasks:
+                if os.path.exists(npymask):
+                    rv += np.load(npymask)
+        #.tif mask
+        tifmasks = filter(lambda msk: msk.endswith('.tif'), addmask)
+        if len(tifmasks)>0:
+            for tifmask in tifmasks:
+                if os.path.exists(tifmask):
+                    immask = fabio.openimage.openimage(tifmask)
+                    rv += self.flipImage(immask.data)
+        #edge mask 
         if np.sum(self.maskedges)!=0:
-            rv = rv + self.edgeMask(self.maskedges)
-        self.mask = (rv == 0)
+            rv += self.edgeMask(self.maskedges)
+        
+        self.mask = (rv > 0)
         return self.mask
     
-    def selfMask(self, pic, size=5, r=1.2):
-        mask = np.ones(pic.shape)
-        if 'deadpixel' in self.selfmask:
-            mask *= self.deadPixelMask(pic)
-        if 'spot' in self.selfmask:
-            mask *= self.spotMask(pic, size, r)
-        #mask = self.flipImage(mask)
-        return mask
+    def dynamicMask(self, pic, addmask = None):
+        '''dyamic mask generated according to pic itself.
+        
+        return: 2d array of boolean, 1 stands for masked pixel
+        '''
+        addmask = self.addmask if addmask==None else addmask
+        #right here, '1' stands for masked pixel, in the actual mask array, '1' stands for unmasked pixel
+        rv = np.zeros((self.ydimension, self.xdimension))
+        flag = False
+        #deadpixel mask
+        dpmask = filter(lambda msk: msk.startswith('deadpixel'), addmask)
+        if len(dpmask)>0:
+            rv += self.deadPixelMask(pic)
+            flag = True
+        #spot mask
+        spmask = filter(lambda msk: msk.startswith('spot'), addmask)
+        if len(spmask)>0:
+            rv += self.spotMask(pic)
+            flag = True
+        #return None if none mask applied
+        if flag:
+            self.dynamicmask = (rv>0)
+        else:
+            self.dynamicmask = None
+        return self.dynamicmask
     
     def deadPixelMask(self, pic):
         '''mask the dead pixel
-        return: 0 for masked pixel
+        return: 1 for masked pixel
         '''
         avgpic = np.average(pic)
         ks = np.ones((5,5))
@@ -97,16 +125,14 @@ class Mask(object):
         picb = snf.percentile_filter(pic, 5, 3) < avgpic/10
         picb = snm.binary_dilation(picb, structure=ks)
         picb = snm.binary_erosion(picb, structure=ks1)
-        picb = np.logical_not(picb)
         return picb
     
     def spotMask(self, pic, size=5, r = 1.2):
         '''mask the spot in image
-        return: 0 for masked pixel
+        return: 1 for masked pixel
         '''
         rank = snf.rank_filter(pic, -size, size)
         ind = snm.binary_dilation(pic>rank*r, np.ones((3,3)))
-        ind = np.logical_not(ind)
         return ind
     
     def edgeMask(self, edges=None):
@@ -137,6 +163,18 @@ class Mask(object):
         rv[-edges[2]-ra:-edges[2], -edges[1]-ra:-edges[1]] = ind[-ra:,-ra:]
         return rv
     
+    def undersample(self, undersamplerate):
+        '''a special mask used for undesampling image. It will create a mask that
+        discard (total number*(1-undersamplerate)) pixels
+        undersamplerate: 0~1
+        '''
+        ind = np.random.permutation(len(self.picflat))[:len(self.picflat)*undersamplerate]
+        n = self.xdimension * self.ydimension
+        mask = np.zeros_like(n, dtype = bool)
+        mask[ind] = True
+        mask1 = ssp.spdiags((mask), [0], n, n).tocsr()
+        return mask1
+        
     def flipImage(self, pic):
         '''flip image if configured in config 
         '''
@@ -146,3 +184,14 @@ class Mask(object):
             pic = pic[::-1,:]
         return pic
     
+    def saveMask(self, filename, pic=None, addmask=None):
+        '''generate a mask according to the addmask and pic. save it to .npy. in .npy, 1 stands for masked pixel
+        the mask has same ort as the pic, which means if the pic is fliped, the mask is fliped
+        '''
+        if not hasattr(self, 'mask'):
+            self.normalMask(addmask)
+        if (not hastattr(self, 'dynamicmask')) and (pic!=None):
+            self.dynamicMask(pic, addmask=addmask)
+        tmask = np.logical_and(self.mask, self.dynamicmask) if pic!=None else self.mask
+        np.save(filename, np.logical_not(tmask))
+        return tmask

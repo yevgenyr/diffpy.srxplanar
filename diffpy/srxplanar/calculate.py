@@ -46,7 +46,6 @@ class Calculate(object):
     tthstepd = _configPropertyR('tthstepd')
     tthorqstep = _configPropertyR('tthorqstep')
     tthorqmax = _configPropertyR('tthorqmax')
-    selfcorrenable = _configPropertyR('selfcorrenable')
     uncertaintyenable = _configPropertyR('uncertaintyenable')
     sacorrectionenable = _configPropertyR('sacorrectionenable')
     polcorrectionenable = _configPropertyR('polcorrectionenable')
@@ -82,8 +81,6 @@ class Calculate(object):
         '''
         if mask == None:
             mask = np.zeros((self.ydimension, self.xdimension), dtype=boolean)
-        else:
-            mask = np.logical_not(mask)
         tthorqmatrix = self.tthorqmatrix
         tthorqmatrix[mask] = 1000.0
         tthorqmatrix = np.rint(tthorqmatrix / self.tthorqstep).astype(int)
@@ -115,7 +112,7 @@ class Calculate(object):
                     datavar = picvarflat[indlow[i]:indhigh[i]]
                     if self.selfcorrenable:
                         medianint = np.median(data)
-                        ind1 = np.logical_and(medianint*0.2<data, data<medianint*5)
+                        ind1 = np.logical_and(medianint*0.5<data, data<medianint*2)
                         data = data[ind1]
                         datavar = datavar[ind1]
                     intensity[dataind] = np.mean(data)

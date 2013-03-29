@@ -15,17 +15,15 @@
 
 import numpy as np
 import fabio, fabio.openimage
-import os
-import fnmatch
-import sys
+import os,fnmatch, sys
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
 class LoadImage(object):
-    
     # define configuration properties that are forwarded to self.config
     xdimension = _configPropertyR('xdimension')
     ydimension = _configPropertyR('ydimension')
     tifdirectory = _configPropertyR('tifdirectory')
+    filenames = _configPropertyR('filenames')
     includepattern = _configPropertyR('includepattern')
     excludepattern = _configPropertyR('excludepattern')
     fliphorizontal = _configPropertyR('fliphorizontal')
@@ -72,7 +70,7 @@ class LoadImage(object):
             image = image - self.backgroundpic
         return image
     
-    def genFileList(self, opendir=None, includepattern=None, excludepattern=None):
+    def genFileList(self, filenames=None, opendir=None, includepattern=None, excludepattern=None):
         '''generate the list of file in opendir according to include/exclude pattern
         opendir:        string, the directory of files
         includepattern: string, wildcard of files that will be loaded into PDFLive
@@ -80,13 +78,15 @@ class LoadImage(object):
         
         return:         list of string, a list of filenames
         '''
+        filenames = self.filenames if filenames == None else filenames
         opendir = self.tifdirectory if opendir == None else opendir
         includepattern = self.includepattern if includepattern == None else includepattern
         excludepattern = self.excludepattern if excludepattern == None else excludepattern
-        fileset = self.genFileSet(opendir, includepattern, excludepattern)
+        
+        fileset = self.genFileSet(filenames, opendir, includepattern, excludepattern)
         return sorted(list(fileset))
     
-    def genFileSet(self, opendir=None, includepattern=None, excludepattern=None):
+    def genFileSet(self, filenames=None, opendir=None, includepattern=None, excludepattern=None):
         '''generate the set of file in opendir according to include/exclude pattern
         opendir:        string, the directory of files
         includepattern: string, wildcard of files that will be loaded into PDFLive
@@ -94,13 +94,21 @@ class LoadImage(object):
         
         return:         set of string, a set of filenames
         '''
+        filenames = self.filenames if filenames == None else filenames
         opendir = self.tifdirectory if opendir == None else opendir
         includepattern = self.includepattern if includepattern == None else includepattern
         excludepattern = self.excludepattern if excludepattern == None else excludepattern
-        filelist = fnmatch.filter(os.listdir(opendir), includepattern)
-        fileset = set(filelist)
-        if len(excludepattern) > 0:
-            for excludep in excludepattern:
-                excludefilelist = fnmatch.filter(filelist, excludep)
-                fileset = fileset - set(excludefilelist)
+        # filter the filenames according to include and exclude pattern
+        filelist = os.listdir(opendir)
+        fileset = set()
+        for includep in includepattern:
+            fileset |= set(fnmatch.filter(filelist, includep))
+        for excludep in excludepattern:
+            fileset -= set(fnmatch.filter(filelist, excludep))
+        # filter the filenames according to filenames
+        if len(filenames)>0:
+            fileset1 = set()
+            for filename in filenames:
+                fileset1 |= set(fnmatch.filter(fileset, filename))
+            fileset = fileset1
         return fileset

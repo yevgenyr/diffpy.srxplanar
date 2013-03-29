@@ -29,108 +29,138 @@ from diffpy.srxplanar.saveresults import SaveResults
 class SrXplanar(object):
     '''
     '''
-    def __init__(self, srxplanarconfig=None):
-        if srxplanarconfig!=None:
-            if type(srxplanarconfig) == str:
-                self.config = SrXplanarConfig(srxplanarconfig)
-            else:
-                self.config = srxplanarconfig
+    
+    def __init__(self, srsig2dconfig=None, configfile=None, args=None, **kwargs):
+        if srsig2dconfig!=None:
+            self.config = srsig2dconfig
+            self.config.updateConfig(filename=configfile, args=args, **kwargs)
         else:
-            self.config = SrXplanarConfig()
-
+            self.config = SrXplanarConfig(filename=configfile, args=args, **kwargs)
         #init modulars
-        self.loadimage = LoadImage(self.config)
-        self.calculate = Calculate(self.config)
-        self.mask = Mask(self.config, self.calculate)
-        self.saveresults = SaveResults(self.config)
-        #init variables
-        self.prepareCalculation()
+        if not self.config.nocalculation:
+            self.mask = Mask(self.config)
+            self.loadimage = LoadImage(self.config)
+            self.calculate = Calculate(self.config)
+            self.saveresults = SaveResults(self.config)                
+            self.prepareCalculation(False)
         return
     
-    def updateConfig(self, configfile=None):
+    def updateConfig(self, filename=None, args=None, **kwargs):
         '''update config, rerun all prepareCalculation() for each modulars,
         usually used after you changed some paramters.  
         :configfile str: you can specify a configfile, program will read the config file and update
         '''
-        if type(configfile)==str:
-            self.config.loadFromFile(configfile)
+        self.config.updateConfig(filename=filename, args=args, **kwargs)
         #update instances
-        self.config.updateConfig()
-        self.calculate.prepareCalculation()
-        self.loadimage.prepareCalculation()
         self.mask.prepareCalculation()
+        self.loadimage.prepareCalculation()
+        self.calculate.prepareCalculation()
         self.saveresults.prepareCalculation()
+        self.prepareCalculation(False)
         return
-    
-    def prepareCalculation(self, pic=None):
+        
+    def prepareCalculation(self, reloadimage=True):
         '''prepare data used in calculation
         '''
-        masknormal = self.mask.normalMask()
-        if pic!=None:
-            selfmask = self.mask.selfMask(pic)
-            masknormal *= selfmask
+        self.masknormal = self.mask.normalMask()
         self.correction = self.calculate.genCorrectionMatrix()
-        self.calculate.genIntegrationInds(masknormal)
+        if reloadimage:
+            self._picChanged()
+        else:
+            self.calculate.genIntegrationInds(self.masknormal)
         return
     
+    def _picChanged(self):
+        '''update all pic related data (include self corr mask) when a new image is read
+        '''
+        dynamicmask = self.mask.dynamicMask(self.pic)
+        if dynamicmask != None:
+            mask = self.masknormal * dynamicmask
+            self.calculate.genIntegrationInds(mask)
+        return
+    
+    
+    def _getSaveFileName(self, imagename=None, filename=None):
+        '''get the save file name, the priority order is self.output> filename> imagename > 'output'(default name)
+        
+        param imagename: string, filename/path of image file (drop this term if it is an image array)
+        param filename: string, 
+        
+        return: string, string, name of file to be saved 
+        '''
+        rv = 'output'
+        if self.config.output!=None and self.config.output!='':
+            rv = self.config.output
+        elif filename!=None:
+            rv = filename
+        elif imagename!=None and type(imagename)==str:
+            rv = imagename
+        return rv
+    
+       
     def integrate(self, image, filename=None, savefile=True):
+        rv = {}
         if type(image)==str:
             self.pic = self.loadimage.loadImage(image)
-            self.filename = image
         else:
             self.pic = self.loadimage.flipImage(image)
-            self.filename = filename if filename!=None else 'output'
-        if self.config.selfmask!=[]:
-            self.prepareCalculation(self.pic)
+        rv['filename'] = self._getSaveFileName(imagename= image, filename=filename)
+        self._picChanged()
         #calculate
         if self.config.uncertaintyenable:
             self.pic = self.pic * self.correction
             picvar = self.calculate.varianceLocal(self.pic)
-            self.chi = self.calculate.intensity(self.pic, picvar)
+            rv['chi'] = self.chi = self.calculate.intensity(self.pic, picvar)
         else:
             self.pic = self.pic * self.correction
-            self.chi = self.calculate.intensity(self.pic)
+            rv['chi'] = self.chi = self.calculate.intensity(self.pic)
         if savefile:
-            self.saveresults.save(self.chi, self.filename)
-        return self.chi
+            self.saveresults.save(rv)
+        return rv
     
-    def integrateAll(self):
-        '''integrate all image in self.tifdirectory
+    def createMask(self, filename= None, pic=None, addmask=None):
+        '''create and save a mask according to addmask, pic
+        1 stands for masked pixel in saved file
+        
+        return: 2d array, 0 stands for masked pixel here
         '''
+        filename = self.config.createmask if filename==None else filename
+        filename = 'mask.npy' if filename =='' else filename
+        addmask = self.addmask if addmask==None else addmask
+        if not hasattr(self, 'mask'):
+            self.mask = Mask(self.config)
+        if not hasattr(self, 'loadimage'):
+            self.loadimage = LoadImage(self.config)
+        
         filelist = self.loadimage.genFileList()
-        filelistfull = map(lambda name: os.path.normpath(self.config.tifdirectory+'/'+name), filelist)
-        for file1 in filelistfull:
-            self.integrate(file1)
-        return
+        pic = self.loadimage.loadImage(filelist[0]) if len(filelist)>0 else None
+        rv = self.mask.saveMask(self.config.createmask, pic, addmask)
+        return rv
     
-def main1():
-    configfile = sys.argv[-1] if len(sys.argv)>1 else ''
-    if os.path.exists(configfile):
-        xplanar = SrXplanar(configfile)
-    xplanar.integrateAll()
-    return
+    def process(self):
+        '''process the images according to filenames/includepattern/excludepattern/summation
+        '''
+        if not self.config.nocalculation:
+            filelist = self.loadimage.genFileList()
+            if (self.config.summation)and(len(filelist)>1):
+                image = np.zeros((self.config.ydimension, self.config.xdimension))
+                for imagefile in filelist:
+                    rv += self.loadimage.loadImage(imagefile)
+                self.integrate(rv, imagefile)
+            else:
+                for imagefile in filelist:
+                    self.integrate(imagefile)
+        #mask creating
+        elif self.config.createmask!='':
+            self.createMask()
+        return
+
 
 def main():
-    '''read config and integrate all images
+    '''read config and integrate images
     '''
-    configfile = None
-    # start with a default configuration file if it exists
-    if os.path.isfile('srxplanarconfig.cfg'):
-        configfile = 'srxplanarconfig.cfg'
-    # use user's file no matter what she provided
-    if len(sys.argv) > 1:
-        configfile = sys.argv[1]
-    # check for -h, --help options; this should be replaced with optparse
-    helprequested = set(['-h', '--help']).intersection(sys.argv[1:])
-    # here configfile is None if the default does not exist
-    # and user did not give any argument
-    if configfile is None or helprequested:
-        print 'usage: %s [srxplanarconfig.cfg]'
-        print 'Please provide configuration file.'
-        sys.exit()
-    # configfile is set to something here
-    xplanar = SrXplanar(configfile)
-    xplanar.integrateAll()
+    srxplanar = SrSig2d(args=sys.argv[1:])
+    srxplanar.process()
     return
 
 if __name__=='__main__':

@@ -135,7 +135,7 @@ class ConfigBase(object):
         'strlist':[],
         }
     #configlist, store the options name for each sections
-    _configlist = {} 
+    _configlist = OrderedDict({}) 
     
     #default config file path and name, overload it for your config class
     _defaultconfigpath = ['config.cfg']
@@ -449,8 +449,10 @@ class ConfigBase(object):
             if full, all available options in self.config will be written to config file
         '''
         self._updateSelf()
-        mcond = lambda optname: self._optdata[optname].get('config', 'a')=='a' if mode.startswith('s')\
-            else lambda optname: self._optdata[optname].get('config', 'a')!='n'
+        #func decide if wirte the option to config according to mode
+        #options not present in self._optdata will not be written to config
+        mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')=='a' if mode.startswith('s')\
+            else lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')!='n'
             
         fp = open(filename, 'wb')        
         for section in self.config._sections:
@@ -471,18 +473,22 @@ class ConfigBase(object):
         '''
         
         lines = []
-        title = 'Configuration information'
-        lines.append('--------------------------------------')
+        title = '#Configuration information#' if title == None else '# %s #' % title
+        lines.append(title)
         #func decide if wirte the option to header according to mode
-        mcond = lambda optname: self._optdata[optname].get('header', 'a')=='a' if mode.startswith('s')\
-            else lambda optname: self._optdata[optname].get('header', 'a')!='n'
+        #options not present in self._optdata will not be written to header
+        mcond = lambda optname: self._optdata.get(optname, {'header':'n'}).get('header', 'a')=='a' if mode.startswith('s')\
+            else lambda optname: self._optdata.get(optname, {'header':'n'}).get('header', 'a')!='n'
         
         for secname in self._configlist.keys():
-            lines.append('['+secname+']')
+            lines.append("[%s]" % secname)
             for optname in self._configlist[secname]:
                 if mcond(optname):
-                    lines.append(configname + ':  ' + str(getattr(self.config, configname)))
-            lines.append('--------------------------------------')
+                    value = getattr(self, optname)
+                    strvalue = ', '.join(map(str, value)) if type(value)==list else str(value)
+                    lines.append("%s = %s" % (optname, strvalue))
+            lines.append('')
+        lines.append('# data #')                
         rv = "\r\n".join(lines) + "\r\n"
         return rv
     
