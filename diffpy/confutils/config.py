@@ -435,6 +435,14 @@ class ConfigBase(object):
             rv = self.parseArgs(args)
         if kwargs!={}:
             rv = self.parseKwargs(**kwargs)
+        
+        #read a configfile if specified in args or kwargs
+        if (self.configfile!='')and(self.configfile!=None):
+            self.parseConfigFile(filename=self.configfile)
+            self.configfile = ''
+            rv = self.parseArgs(args) if args!=None else None
+            rv = self.parseKwargs(**kwargs) if kwargs!={} else None
+            
         if (filename==None)and(args==None)and(kwargs=={}):
             rv = self._updateSelf()
         self._postProcessing(**kwargs)
@@ -497,10 +505,7 @@ class ConfigBase(object):
         this method is called in self.updateConfig, after all file/args/kwargs
         some options are reset to their default to pervent process twice
         '''
-        #read a configfile if specified in args or kwargs
-        if (self.configfile!='')and(self.configfile!=None):
-            self.parseConfigFile(filename=self.configfile)
-            self.configfile = ''
+        
         self._additionalPostProcessing(**kwargs)
         
         if (self.createconfig!='')and(self.createconfig!=None):

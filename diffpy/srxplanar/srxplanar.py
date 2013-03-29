@@ -75,7 +75,7 @@ class SrXplanar(object):
         '''
         dynamicmask = self.mask.dynamicMask(self.pic)
         if dynamicmask != None:
-            mask = self.masknormal * dynamicmask
+            mask = np.logical_or(self.masknormal, dynamicmask)
             self.calculate.genIntegrationInds(mask)
         return
     
@@ -126,12 +126,11 @@ class SrXplanar(object):
         '''
         filename = self.config.createmask if filename==None else filename
         filename = 'mask.npy' if filename =='' else filename
-        addmask = self.addmask if addmask==None else addmask
+        addmask = self.config.addmask if addmask==None else addmask
         if not hasattr(self, 'mask'):
             self.mask = Mask(self.config)
         if not hasattr(self, 'loadimage'):
             self.loadimage = LoadImage(self.config)
-        
         filelist = self.loadimage.genFileList()
         pic = self.loadimage.loadImage(filelist[0]) if len(filelist)>0 else None
         rv = self.mask.saveMask(self.config.createmask, pic, addmask)
@@ -159,7 +158,7 @@ class SrXplanar(object):
 def main():
     '''read config and integrate images
     '''
-    srxplanar = SrSig2d(args=sys.argv[1:])
+    srxplanar = SrXplanar(args=sys.argv[1:])
     srxplanar.process()
     return
 

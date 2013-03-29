@@ -93,7 +93,7 @@ class SrXplanarConfig(ConfigBase):
                 to mask the spot, or names of mask file, support .npy and .tif and .msk(fit2dmsk) \
                 add "selfcorr" to mask the pixel whose intensity is too high/low compare to pixels in the same bin',
             'n':'*',
-            'd':[],}],
+            'd':['edgemask'],}],
         ['createmask',{'sec':'Control', 'config':'n','header':'n',
             'h':'create a mask file according to current image file and value of addmask, maskedges',
             'd':'',}],

@@ -83,8 +83,10 @@ class Mask(object):
                     immask = fabio.openimage.openimage(tifmask)
                     rv += self.flipImage(immask.data)
         #edge mask 
-        if np.sum(self.maskedges)!=0:
-            rv += self.edgeMask(self.maskedges)
+        edgemask = filter(lambda msk: msk.startswith('edge'), addmask)
+        if len(edgemask)>0:
+            if np.sum(self.maskedges)!=0:
+                rv += self.edgeMask(self.maskedges)
         
         self.mask = (rv > 0)
         return self.mask
@@ -190,8 +192,8 @@ class Mask(object):
         '''
         if not hasattr(self, 'mask'):
             self.normalMask(addmask)
-        if (not hastattr(self, 'dynamicmask')) and (pic!=None):
+        if (not hasattr(self, 'dynamicmask')) and (pic!=None):
             self.dynamicMask(pic, addmask=addmask)
-        tmask = np.logical_and(self.mask, self.dynamicmask) if pic!=None else self.mask
-        np.save(filename, np.logical_not(tmask))
+        tmask = np.logical_or(self.mask, self.dynamicmask) if pic!=None else self.mask
+        np.save(filename, tmask)
         return tmask
