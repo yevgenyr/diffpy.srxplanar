@@ -210,20 +210,13 @@ class SrXplanarConfig(ConfigBase):
                 (left, right, top, bottom), the last one is the radius of a region masked around the corner',
             'n':5,
             'd':[10,10,10,10,100],}],
-        ['nocalculation',{'sec':'Others','config':'f','header':'n',
+        ['nocalculation',{'sec':'Others','config':'n','header':'n',
             'h':'set True to disable all calculation, will automaticly set True if createconfig or createmask',
             'n':'?',
             'co':True,
             'd':False,}],
         ]
     
-    #options that consist of list of value
-    _listoptdata = {
-        'strlist':['excludepattern'],
-        'floatlist':[],
-        'intlist':['maskedges'],
-        'strlist':[],
-        }
     #configlist, store the options name for each sections
     #_configlist = {} 
     

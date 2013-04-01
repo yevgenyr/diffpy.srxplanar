@@ -126,14 +126,6 @@ class ConfigBase(object):
             'd':[1,1,1,1,50],}],
         ]
     
-    #options that consist of list of value
-    #examples, overload it
-    _listoptdata = {
-        'strlist':['excludepattern'],
-        'floatlist':[],
-        'intlist':['maskedges'],
-        'strlist':[],
-        }
     #configlist, store the options name for each sections
     _configlist = OrderedDict({}) 
     
@@ -277,11 +269,8 @@ class ConfigBase(object):
         secname =  optdata['sec'] if optdata.has_key('sec') else 'Others'
         self._configlist[secname].append(optname)
         if optdata.get('config', 'a')!='n':
-            if opttype.endswith('list'):
-                self.config.set(secname, optname, str(optdata['d'])[1:-1])
-            else:
-                self.config.set(secname, optname, str(optdata['d']))
-        
+            strvalue = ', '.join(map(str, optdata['d'])) if type(optdata['d'])==list else str(optdata['d'])
+            self.config.set(secname, optname, strvalue)
         #add to self.args
         if optdata.get('args', 'a')!='n':
             #transform optdata to a dict that can pass to add_argument method
@@ -459,17 +448,19 @@ class ConfigBase(object):
         self._updateSelf()
         #func decide if wirte the option to config according to mode
         #options not present in self._optdata will not be written to config
-        mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')=='a' if mode.startswith('s')\
-            else lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')!='n'
-            
+        if mode.startswith('s'):
+            mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')=='a'
+        else:
+            mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')!='n'
+        
         fp = open(filename, 'wb')        
         for section in self.config._sections:
-            fp.write("[%s]\r\n" % section)
+            fp.write("[%s]\n" % section)
             for (key, value) in self.config._sections[section].items():
                 if (key != "__name__") and mcond(key):
-                    fp.write("%s = %s\r\n" %
-                             (key, str(value).replace('\r\n', '\r\n\t')))
-            fp.write("\r\n")
+                    fp.write("%s = %s\n" %
+                             (key, str(value).replace('\n', '\n\t')))
+            fp.write("\n")
         fp.close()
         return
     
@@ -485,9 +476,11 @@ class ConfigBase(object):
         lines.append(title)
         #func decide if wirte the option to header according to mode
         #options not present in self._optdata will not be written to header
-        mcond = lambda optname: self._optdata.get(optname, {'header':'n'}).get('header', 'a')=='a' if mode.startswith('s')\
-            else lambda optname: self._optdata.get(optname, {'header':'n'}).get('header', 'a')!='n'
-        
+        if mode.startswith('s'):
+            mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')=='a'
+        else:
+            mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')!='n'
+
         for secname in self._configlist.keys():
             lines.append("[%s]" % secname)
             for optname in self._configlist[secname]:
@@ -497,7 +490,7 @@ class ConfigBase(object):
                     lines.append("%s = %s" % (optname, strvalue))
             lines.append('')
         lines.append('# data #')                
-        rv = "\r\n".join(lines) + "\r\n"
+        rv = "\n".join(lines) + "\n"
         return rv
     
     def _postProcessing(self, **kwargs):
