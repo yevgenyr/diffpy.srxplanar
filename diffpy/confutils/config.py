@@ -244,8 +244,11 @@ class ConfigBase(object):
         '''detect sections present in self._optdata and add them to self.config
         also add it to self._configlist
         '''
-        seclist = [self._optdata[key]['sec'] for key in self._optdata.keys()]
-        for sec in set(seclist):
+        #seclist = [self._optdata[key]['sec'] for key in self._optdata.keys()]
+        seclist = [self._optdata[opt[0]]['sec'] for opt in self._optdatalist]
+        secdict = OrderedDict.fromkeys(seclist)
+        #for sec in set(seclist):
+        for sec in secdict.keys():
             self.config.add_section(sec)
             self._configlist[sec] = []
         return
@@ -453,14 +456,19 @@ class ConfigBase(object):
         else:
             mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')!='n'
         
-        fp = open(filename, 'wb')        
+        lines = []        
         for section in self.config._sections:
-            fp.write("[%s]\n" % section)
+            tlines = []
             for (key, value) in self.config._sections[section].items():
                 if (key != "__name__") and mcond(key):
-                    fp.write("%s = %s\n" %
-                             (key, str(value).replace('\n', '\n\t')))
-            fp.write("\n")
+                    tlines.append("%s = %s" %(key, str(value).replace('\n', '\n\t')))
+            if len(tlines)>0:
+                lines.append("[%s]" % section)
+                lines.extend(tlines)
+                lines.append('')
+        rv = "\n".join(lines) + "\n"
+        fp = open(filename, 'w')
+        fp.write(rv)
         fp.close()
         return
     
@@ -480,8 +488,23 @@ class ConfigBase(object):
             mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')=='a'
         else:
             mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')!='n'
-
+                
+        lines = []
         for secname in self._configlist.keys():
+            tlines = []
+            for optname in self._configlist[secname]:
+                if mcond(optname):
+                    value = getattr(self, optname)
+                    strvalue = ', '.join(map(str, value)) if type(value)==list else str(value)
+                    tlines.append("%s = %s" % (optname, strvalue))
+            if len(tlines)>0:
+                lines.append("[%s]" % secname)
+                lines.extend(tlines)
+                lines.append('')
+        lines.append('# data #')         
+        rv = "\n".join(lines) + "\n"
+        
+        '''for secname in self._configlist.keys():
             lines.append("[%s]" % secname)
             for optname in self._configlist[secname]:
                 if mcond(optname):
@@ -489,8 +512,8 @@ class ConfigBase(object):
                     strvalue = ', '.join(map(str, value)) if type(value)==list else str(value)
                     lines.append("%s = %s" % (optname, strvalue))
             lines.append('')
-        lines.append('# data #')                
-        rv = "\n".join(lines) + "\n"
+        lines.append('# data #')         
+        rv = "\n".join(lines) + "\n"'''
         return rv
     
     def _postProcessing(self, **kwargs):

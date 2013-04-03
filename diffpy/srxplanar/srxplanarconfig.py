@@ -31,13 +31,18 @@ class SrXplanarConfig(ConfigBase):
     # full(f), short(s), help(h), type(t), action(a), nargs(n), default(d), choices(c), required(r), dest, const
     
     '''optional args: 
-        'config', set False to hide this option in self.config
-        'args', set False to hide this option in self.args
-        'header', set False to hide this option in header output
-        
-        add options will process in the following order:
-        _optdatalistpre, _optdatalist(defined in ConfigBase), _optdatalistext
-        this is also the order that options present in self.args and self.config
+        'args': default is 'a'
+            if 'a', this option will be available in self.args
+            if 'n', this option will not be available in self.args
+        'config': default is 'a'
+            if 'f', this option will present in self.config and be written to config file only in full mode
+            if 'a', this option will present in self.config and be written to config file both in full and short mode
+            if 'n', this option will not present in self.config
+        'header', default is 'a'
+            if 'f', this option will be written to header only in full mode
+            if 'a', this option will be written to header both in full and short mode
+            if 'n', this option will not be written to header
+        so in short mode, all options with 'a' will be written, in full mode, all options with 'a' or 'f' will be written
     '''
     _optdatalistpre = [
         ['filenames',{'sec':'Control', 'config':'n', 'header':'n',
