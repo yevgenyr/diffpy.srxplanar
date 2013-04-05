@@ -77,62 +77,62 @@ class SaveResults(object):
         f = open(filepath,'wb')
         f.write(self.config.getHeader(mode='short'))
         if xrd.shape[0]==3:
-            s = self.writeGSASStr(os.path.splitext(path)[0], self.gsasoutput, xrd[0], xrd[1], xrd[2])
+            s = writeGSASStr(os.path.splitext(path)[0], self.gsasoutput, xrd[0], xrd[1], xrd[2])
         elif xrd.shape[0]==2:
-            s = self.writeGSASStr(os.path.splitext(path)[0], self.gsasoutput, xrd[0], xrd[1])
+            s = writeGSASStr(os.path.splitext(path)[0], self.gsasoutput, xrd[0], xrd[1])
         f.write(s)
         f.close()
         return
   
-    def writeGSASStr(self, name, mode, tth, iobs, esd=None):
-        """Return string of integrated intensities in GSAS format.
-        mode:    string, gsas file type, could be 'std', 'esd', 'fxye' (gsas format)
-        tth:     ndarray, two theta angle
-        iobs:    ndarray, Xrd intensity
-        esd:     ndarray, optional error value of intensity
-        
-        return:  string, a string to be saved to file
-        """
-        maxintensity = 999999
-        logscale = numpy.floor(numpy.log10(maxintensity / numpy.max(iobs)))
-        logscale = min(logscale, 0)
-        scale = 10 ** int(logscale)
-        lines = []
-        ltitle = 'Angular Profile'
-        ltitle += ': %s' % name
-        ltitle += ' scale=%g' % scale
-        if len(ltitle) > 80:    ltitle = ltitle[:80]
-        lines.append("%-80s" % ltitle)
-        ibank = 1
-        nchan = len(iobs)
-        # two-theta0 and dtwo-theta in centidegrees
-        tth0_cdg = tth[0] * 100
-        dtth_cdg = (tth[-1] - tth[0]) / (len(tth) - 1) * 100
-        if esd==None: mode='std'
-        if mode=='std':
-            nrec = int(numpy.ceil(nchan/10.0))
-            lbank = "BANK %5i %8i %8i CONST %9.5f %9.5f %9.5f %9.5f STD" % \
-                    (ibank, nchan, nrec, tth0_cdg, dtth_cdg, 0, 0)
-            lines.append("%-80s" % lbank)
-            lrecs = [ "%2i%6.0f" % (1, ii * scale) for ii in iobs ]
-            for i in range(0, len(lrecs), 10):
-                lines.append("".join(lrecs[i:i+10]))
-        if mode=='esd':
-            nrec = int(numpy.ceil(nchan/5.0))
-            lbank = "BANK %5i %8i %8i CONST %9.5f %9.5f %9.5f %9.5f ESD" % \
-                    (ibank, nchan, nrec, tth0_cdg, dtth_cdg, 0, 0)
-            lines.append("%-80s" % lbank)
-            lrecs = [ "%8.0f%8.0f" % (ii, ee * scale) for ii, ee in zip(iobs, esd) ]
-            for i in range(0, len(lrecs), 5):
-                lines.append("".join(lrecs[i:i+5]))
-        if mode=='fxye':
-            nrec = nchan
-            lbank = "BANK %5i %8i %8i CONST %9.5f %9.5f %9.5f %9.5f FXYE" % \
-                    (ibank, nchan, nrec, tth0_cdg, dtth_cdg, 0, 0)
-            lines.append("%-80s" % lbank)
-            lrecs = [ "%22.10f%22.10f%24.10f" % (xx * scale, yy * scale, ee * scale) for xx, yy, ee in zip(tth, iobs, esd) ]
-            for i in range(len(lrecs)):
-                lines.append("%-80s" % lrecs[i])
-        lines[-1] = "%-80s" % lines[-1]
-        rv = "\r\n".join(lines) + "\r\n"
-        return rv
+def writeGSASStr(name, mode, tth, iobs, esd=None):
+    """Return string of integrated intensities in GSAS format.
+    mode:    string, gsas file type, could be 'std', 'esd', 'fxye' (gsas format)
+    tth:     ndarray, two theta angle
+    iobs:    ndarray, Xrd intensity
+    esd:     ndarray, optional error value of intensity
+    
+    return:  string, a string to be saved to file
+    """
+    maxintensity = 999999
+    logscale = numpy.floor(numpy.log10(maxintensity / numpy.max(iobs)))
+    logscale = min(logscale, 0)
+    scale = 10 ** int(logscale)
+    lines = []
+    ltitle = 'Angular Profile'
+    ltitle += ': %s' % name
+    ltitle += ' scale=%g' % scale
+    if len(ltitle) > 80:    ltitle = ltitle[:80]
+    lines.append("%-80s" % ltitle)
+    ibank = 1
+    nchan = len(iobs)
+    # two-theta0 and dtwo-theta in centidegrees
+    tth0_cdg = tth[0] * 100
+    dtth_cdg = (tth[-1] - tth[0]) / (len(tth) - 1) * 100
+    if esd==None: mode='std'
+    if mode=='std':
+        nrec = int(numpy.ceil(nchan/10.0))
+        lbank = "BANK %5i %8i %8i CONST %9.5f %9.5f %9.5f %9.5f STD" % \
+                (ibank, nchan, nrec, tth0_cdg, dtth_cdg, 0, 0)
+        lines.append("%-80s" % lbank)
+        lrecs = [ "%2i%6.0f" % (1, ii * scale) for ii in iobs ]
+        for i in range(0, len(lrecs), 10):
+            lines.append("".join(lrecs[i:i+10]))
+    if mode=='esd':
+        nrec = int(numpy.ceil(nchan/5.0))
+        lbank = "BANK %5i %8i %8i CONST %9.5f %9.5f %9.5f %9.5f ESD" % \
+                (ibank, nchan, nrec, tth0_cdg, dtth_cdg, 0, 0)
+        lines.append("%-80s" % lbank)
+        lrecs = [ "%8.0f%8.0f" % (ii, ee * scale) for ii, ee in zip(iobs, esd) ]
+        for i in range(0, len(lrecs), 5):
+            lines.append("".join(lrecs[i:i+5]))
+    if mode=='fxye':
+        nrec = nchan
+        lbank = "BANK %5i %8i %8i CONST %9.5f %9.5f %9.5f %9.5f FXYE" % \
+                (ibank, nchan, nrec, tth0_cdg, dtth_cdg, 0, 0)
+        lines.append("%-80s" % lbank)
+        lrecs = [ "%22.10f%22.10f%24.10f" % (xx * scale, yy * scale, ee * scale) for xx, yy, ee in zip(tth, iobs, esd) ]
+        for i in range(len(lrecs)):
+            lines.append("%-80s" % lrecs[i])
+    lines[-1] = "%-80s" % lines[-1]
+    rv = "\r\n".join(lines) + "\r\n"
+    return rv

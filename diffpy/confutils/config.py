@@ -126,6 +126,8 @@ class ConfigBase(object):
             'd':[1,1,1,1,50],}],
         ]
     
+    _optdata = dict(_optdatalistpre + _optdatalist + _optdatalistext)
+        
     #configlist, store the options name for each sections
     _configlist = OrderedDict({}) 
     
@@ -133,8 +135,7 @@ class ConfigBase(object):
     _defaultconfigpath = ['config.cfg']
     
     def __init__(self, filename=None, args=None, **kwargs):
-        self._optdatalist = self._optdatalistpre + self._optdatalist
-        self._optdatalist.extend(self._optdatalistext)
+        self._optdatalist = self._optdatalistpre + self._optdatalist + self._optdatalistext
         self._optdata = dict(self._optdatalist)
         self._detectAddSections()
         for opt in self._optdatalist:
@@ -215,6 +216,39 @@ class ConfigBase(object):
         return: string of type 
         '''
         optdata = self._optdata[optname]
+        if optdata.has_key('t'):
+            opttype = optdata['t']
+        else:
+            value = optdata['d']
+            if type(value)==str:
+                opttype = 'str'
+            elif type(value)==float:
+                opttype = 'float'
+            elif type(value)==int:
+                opttype = 'int'
+            elif type(value)==bool:
+                opttype = 'bool'
+            elif type(value)==list:
+                if len(value)==0:
+                    opttype = 'strlist'
+                elif type(value[0])==str:
+                    opttype = 'strlist'
+                elif type(value[0])==float:
+                    opttype = 'floatlist'
+                elif type(value[0])==int:
+                    opttype = 'intlist'
+                elif type(value[0])==bool:
+                    opttype = 'boollist'
+        return opttype
+    
+    @classmethod
+    def _getTypeC(cls, optname):
+        '''detect the type of option
+        param optname: str, name of option
+        
+        return: string of type 
+        '''
+        optdata = cls._optdata[optname]
         if optdata.has_key('t'):
             opttype = optdata['t']
         else:

@@ -266,28 +266,10 @@ class SrXplanarConfig(ConfigBase):
         '''load parameters from fit2d calibration information. copy/paste the fit2d calibration 
         results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
         '''
-        def findFloat(line):
-            temp = re.findall('[-+]?\d*\.\d+|[-+]?\d+', line)
-            return map(float, temp)
-        if filename != None:
-            if os.path.exists(filename):
-                f = open(filename, 'r')
-                lines = f.readlines()
-                for line in lines:
-                    if re.search('Refined Beam centre.*pixels', line):
-                        self.xbeamcenter, self.ybeamcenter = findFloat(line)
-                    elif re.search('Refined sample to detector distance', line):
-                        self.distance = findFloat(line)[0]
-                    elif re.search('Refined wavelength', line):
-                        self.wavelength = findFloat(line)[0]
-                    elif re.search('Refined tilt plane rotation angle', line):
-                        self.rotationd = findFloat(line)[0]
-                    elif re.search('Refined tilt angle', line):
-                        self.tiltd = findFloat(line)[0]
-                    elif re.search('Refined wavelength', line):
-                        self.wavelength = findFloat(line)[0]
-                f.close()
-                self._updateSelf()
+        rv = parseFit2D(filename)
+        for optname in rv.keys():
+            setattr(self, optname, rv[optname])
+        self._updateSelf()
         return
     
     def _checkStep(self):
@@ -335,6 +317,36 @@ def checkMax(config):
     tthmaxd = np.degrees(np.max(tthmatrix)) + 0.5
     qmax = np.max(qmatrix) + 0.1
     return tthmaxd, qmax
+
+def parseFit2D(filename):
+    '''load parameters from fit2d calibration information. copy/paste the fit2d calibration 
+    results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
+    '''
+    rv = {}
+    def findFloat(line):
+        temp = re.findall('[-+]?\d*\.\d+|[-+]?\d+', line)
+        return map(float, temp)
+    if filename != None:
+        if os.path.exists(filename):
+            f = open(filename, 'r')
+            lines = f.readlines()
+            f.close()
+        else:
+            lines = filename.split() 
+        for line in lines:
+            if re.search('Refined Beam centre.*pixels', line):
+                rv['xbeamcenter'], rv['ybeamcenter'] = findFloat(line)
+            elif re.search('Refined sample to detector distance', line):
+                rv['distance'] = findFloat(line)[0]
+            elif re.search('Refined wavelength', line):
+                rv['wavelength'] = findFloat(line)[0]
+            elif re.search('Refined tilt plane rotation angle', line):
+                rv['rotationd'] = findFloat(line)[0]
+            elif re.search('Refined tilt angle', line):
+                rv['tiltd'] = findFloat(line)[0]
+            elif re.search('Refined wavelength', line):
+                rv['wavelength'] = findFloat(line)[0]            
+    return rv
 
 
 if __name__=='__main__':
