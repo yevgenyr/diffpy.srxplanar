@@ -503,17 +503,6 @@ class ConfigBase(object):
                 lines.append('')
         lines.append('# data #')         
         rv = "\n".join(lines) + "\n"
-        
-        '''for secname in self._configlist.keys():
-            lines.append("[%s]" % secname)
-            for optname in self._configlist[secname]:
-                if mcond(optname):
-                    value = getattr(self, optname)
-                    strvalue = ', '.join(map(str, value)) if type(value)==list else str(value)
-                    lines.append("%s = %s" % (optname, strvalue))
-            lines.append('')
-        lines.append('# data #')         
-        rv = "\n".join(lines) + "\n"'''
         return rv
     
     def _postProcessing(self, **kwargs):

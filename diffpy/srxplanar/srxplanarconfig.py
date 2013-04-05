@@ -242,7 +242,9 @@ class SrXplanarConfig(ConfigBase):
         self._copySelftoConfig()
         '''
         #test if tthmax or qmax has changed
-        self._checkMax()
+        self.tthmaxd, self.qmax = checkMax(self)
+        
+        
         #self._checkStep()
         if self.integrationspace == 'twotheta':
             self.tthorqmax = self.tthmax
@@ -288,31 +290,6 @@ class SrXplanarConfig(ConfigBase):
                 self._updateSelf()
         return
     
-    def _checkMax(self):
-        '''check and change tthmax and qmax to actual tthmax and qmax of image 
-        '''
-        xr = (np.array([0, self.xdimension+1]) - self.xbeamcenter) * self.xpixelsize
-        yr = (np.array([0, self.ydimension+1]) - self.ybeamcenter) * self.ypixelsize
-        sinr = np.sin(self.rotation)
-        cosr = np.cos(self.rotation)
-        sint = np.sin(self.tilt)
-        cost = np.cos(self.tilt)
-        sourcexr = self.distance * sint * cosr
-        sourceyr = -self.distance * sint * sinr
-        sourcezr = self.distance * cost
-        
-        dmatrix = ((xr - sourcexr) ** 2).reshape(1, 2) + \
-                  ((yr - sourceyr) ** 2).reshape(2, 1) + sourcezr ** 2
-        dmatrix = np.sqrt(dmatrix)
-        tthmatrix1 = ((-xr + sourcexr) * sourcexr).reshape(1, 2) + \
-                     ((-yr + sourceyr) * sourceyr).reshape(2, 1) + sourcezr * sourcezr
-        tthmatrix = np.arccos(tthmatrix1 / dmatrix / self.distance)
-        qmatrix = 4 * np.pi * np.sin(tthmatrix / 2.0) / self.wavelength
-        
-        self.tthmaxd = np.degrees(np.max(tthmatrix)) + 1.0
-        self.qmax = np.max(qmatrix) + 0.1
-        return
-    
     def _checkStep(self):
         tthstep = self.xpixelsize / self.distance 
         qstep = 4 * np.pi * np.sin(tthstep / 2.0) / self.wavelength
@@ -322,8 +299,45 @@ class SrXplanarConfig(ConfigBase):
             self.xrdqstep = qstep
         return
 
+def checkMax(config):
+    '''check and change tthmax and qmax to actual tthmax and qmax of image 
+    '''
+    xdimension = getattr(config, 'xdimension')
+    ydimension = getattr(config, 'ydimension')
+    xbeamcenter = getattr(config, 'xbeamcenter')
+    ybeamcenter = getattr(config, 'ybeamcenter')
+    xpixelsize = getattr(config, 'xpixelsize')
+    ypixelsize = getattr(config, 'ypixelsize')
+    rotation = getattr(config, 'rotation')
+    tilt = getattr(config, 'tilt')
+    distance = getattr(config, 'distance')
+    wavelength = getattr(config, 'wavelength')
+    
+    
+    xr = (np.array([0, xdimension+1]) - xbeamcenter) * xpixelsize
+    yr = (np.array([0, ydimension+1]) - ybeamcenter) * ypixelsize
+    sinr = np.sin(rotation)
+    cosr = np.cos(rotation)
+    sint = np.sin(tilt)
+    cost = np.cos(tilt)
+    sourcexr = distance * sint * cosr
+    sourceyr = -distance * sint * sinr
+    sourcezr = distance * cost
+    
+    dmatrix = ((xr - sourcexr) ** 2).reshape(1, 2) + \
+              ((yr - sourceyr) ** 2).reshape(2, 1) + sourcezr ** 2
+    dmatrix = np.sqrt(dmatrix)
+    tthmatrix1 = ((-xr + sourcexr) * sourcexr).reshape(1, 2) + \
+                 ((-yr + sourceyr) * sourceyr).reshape(2, 1) + sourcezr * sourcezr
+    tthmatrix = np.arccos(tthmatrix1 / dmatrix / distance)
+    qmatrix = 4 * np.pi * np.sin(tthmatrix / 2.0) / wavelength
+    
+    tthmaxd = np.degrees(np.max(tthmatrix)) + 0.5
+    qmax = np.max(qmatrix) + 0.1
+    return tthmaxd, qmax
+
+
 if __name__=='__main__':
-    a = SrXPlanarConfig()
-    a.loadFromFile('test.cfg')
+    a = SrXplanarConfig()
     a.updateConfig()
     a.writeConfig('test.cfg')
