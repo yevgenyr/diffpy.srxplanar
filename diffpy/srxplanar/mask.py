@@ -194,6 +194,9 @@ class Mask(object):
             self.normalMask(addmask)
         if (not hasattr(self, 'dynamicmask')) and (pic!=None):
             self.dynamicMask(pic, addmask=addmask)
-        tmask = np.logical_or(self.mask, self.dynamicmask) if pic!=None else self.mask
+        tmask = self.mask
+        if hasattr(self, 'dynamicmask'):
+            if self.dynamicmask!=None:
+                tmask = np.logical_or(self.mask, self.dynamicmask) if pic!=None else self.mask
         np.save(filename, tmask)
         return tmask

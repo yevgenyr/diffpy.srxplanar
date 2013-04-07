@@ -35,13 +35,7 @@ class SaveResults(object):
         if not os.path.exists(self.savedirectory):
                 os.makedirs(self.savedirectory)
         return
-    
-   
-    def prepareCalculation(self):
-        if not os.path.exists(self.savedirectory):
-                os.makedirs(self.savedirectory)
-        return
-    
+
     def getFilePathWithoutExt(self, filename):
         '''get the normalized full path of filename to be saved
         param filename: string, could be full path/ file name only/ with/without ext, only the base part of filename is used.

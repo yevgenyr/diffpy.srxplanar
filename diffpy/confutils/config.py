@@ -40,8 +40,6 @@ class ConfigBase(object):
     config: ConfigParser.ConfigParser
     args: argparse
     '''
-    config = ConfigParser.ConfigParser(dict_type = OrderedDict)
-    args = argparse.ArgumentParser(description='SrSig2d Configuration')
     
     # optdata contains these keys:
     # full(f, positional), short(s), help(h), type(t), action(a), nargs(n), default(d), choices(c), required(r), dest, const
@@ -135,6 +133,9 @@ class ConfigBase(object):
     _defaultconfigpath = ['config.cfg']
     
     def __init__(self, filename=None, args=None, **kwargs):
+        self.config = ConfigParser.ConfigParser(dict_type = OrderedDict)
+        self.args = argparse.ArgumentParser(description='SrSig2d Configuration')
+        
         self._optdatalist = self._optdatalistpre + self._optdatalist + self._optdatalistext
         self._optdata = dict(self._optdatalist)
         self._detectAddSections()

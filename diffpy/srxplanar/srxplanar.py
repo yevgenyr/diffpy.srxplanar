@@ -30,9 +30,9 @@ class SrXplanar(object):
     '''
     '''
     
-    def __init__(self, srsig2dconfig=None, configfile=None, args=None, **kwargs):
-        if srsig2dconfig!=None:
-            self.config = srsig2dconfig
+    def __init__(self, srxplanarconfig=None, configfile=None, args=None, **kwargs):
+        if srxplanarconfig!=None:
+            self.config = srxplanarconfig
             self.config.updateConfig(filename=configfile, args=args, **kwargs)
         else:
             self.config = SrXplanarConfig(filename=configfile, args=args, **kwargs)
@@ -98,12 +98,14 @@ class SrXplanar(object):
         return rv
     
        
-    def integrate(self, image, filename=None, savefile=True):
+    def integrate(self, image, filename=None, savefile=True, flip=True):
         rv = {}
         if type(image)==str:
             self.pic = self.loadimage.loadImage(image)
-        else:
+        elif flip:
             self.pic = self.loadimage.flipImage(image)
+        else:
+            self.pic = image
         rv['filename'] = self._getSaveFileName(imagename= image, filename=filename)
         self._picChanged()
         #calculate
@@ -131,9 +133,16 @@ class SrXplanar(object):
             self.mask = Mask(self.config)
         if not hasattr(self, 'loadimage'):
             self.loadimage = LoadImage(self.config)
-        filelist = self.loadimage.genFileList()
-        pic = self.loadimage.loadImage(filelist[0]) if len(filelist)>0 else None
-        rv = self.mask.saveMask(self.config.createmask, pic, addmask)
+        if pic==None:
+            filelist = self.loadimage.genFileList()
+            if hasattr(self, 'pic'):
+                if self.pic!=None:
+                    pic =self.pic
+                else:
+                    pic = self.loadimage.loadImage(filelist[0]) if len(filelist)>0 else None
+            else:
+                pic = self.loadimage.loadImage(filelist[0]) if len(filelist)>0 else None
+        rv = self.mask.saveMask(filename, pic, addmask)
         return rv
     
     def process(self):
