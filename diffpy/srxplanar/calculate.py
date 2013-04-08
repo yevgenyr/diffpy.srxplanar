@@ -112,7 +112,7 @@ class Calculate(object):
                     datavar = picvarflat[indlow[i]:indhigh[i]]
                     if self.selfcorrenable:
                         medianint = np.median(data)
-                        ind1 = np.logical_and(medianint*0.5<data, data<medianint*2)
+                        ind1 = np.logical_and(medianint*0.2<data, data<medianint*5)
                         data = data[ind1]
                         datavar = datavar[ind1]
                     intensity[dataind] = np.mean(data)

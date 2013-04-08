@@ -41,7 +41,10 @@ class SaveResults(object):
         param filename: string, could be full path/ file name only/ with/without ext, only the base part of filename is used.
         '''
         filebase = os.path.splitext(os.path.split(filename)[1])[0]
-        filenamep = '_'.join([filebase, self.filenameplus, self.integrationspace])
+        if self.filenameplus!='' and self.filenameplus!=None:
+            filenamep = '_'.join([filebase, self.filenameplus, self.integrationspace])
+        else:
+            filenamep = '_'.join([filebase, self.integrationspace])
         filepathwithoutext = self.savedirectory + '/' + filenamep
         return filepathwithoutext
         
