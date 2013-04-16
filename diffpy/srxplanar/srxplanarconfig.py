@@ -254,8 +254,9 @@ class SrXplanarConfig(ConfigBase):
             self.tthorqstep = self.qstep
         return
     
-    def _additionalPostProcessing(self, **kwargs):
-        self._loadFromFit2D(self.fit2dconfig)
+    def _additionalPostProcessing(self, nofit2d=False, **kwargs):
+        if not nofit2d:
+            self._loadFromFit2D(self.fit2dconfig)
         if self.createconfig!='' or self.createconfigfull!='':
             self.nocalculation = True
         if self.createmask!='':
