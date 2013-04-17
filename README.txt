@@ -9,14 +9,18 @@ usually only writeable by the root.  See the usage info "./setup.py install --he
 
 DEPENDENCIES
 
-SrXPlanar requires the third-party Python libraries, numpy,
-scipy, and matplot lib, and FabIO.  
-FabIO: http://sourceforge.net/projects/fable/files/fabio/
-On Linux operating systems they can be obtained from system package repository.  On Windows, you can download and install PythonXY  http://www.pythonxy.com/  or Enthought Python
-http://www.enthought.com/  which have them included by default.
+
+diffpy.srxplanar requires the third-party Python libraries, 
+numpy >1.60,
+scipy >1.10, 
+FabIO(http://sourceforge.net/projects/fable/files/fabio/)
+
+if python version < 2.7 (these two packages are included in 2.7 but not in 2.6)
+ordereddict  
+argparse
+
+We recommand to install EPD (Enthought Python Distribution)from http://www.enthought.com/ which include most of them by default.
 
 ------------------------------------------------------------------------------
 
 For more information email Prof. Simon Billinge at sb2896@columbia.edu
-
-Last modified $Date: 2009-03-07 01:30:03 -0500 (Sat, 07 Mar 2009) $
