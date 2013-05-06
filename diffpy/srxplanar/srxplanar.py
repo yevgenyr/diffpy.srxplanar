@@ -62,12 +62,12 @@ class SrXplanar(object):
     def prepareCalculation(self, reloadimage=True):
         '''prepare data used in calculation
         '''
-        self.masknormal = self.mask.normalMask()
+        self.staticmask = self.mask.staticMask()
         self.correction = self.calculate.genCorrectionMatrix()
         if reloadimage:
             self._picChanged()
         else:
-            self.calculate.genIntegrationInds(self.masknormal)
+            self.calculate.genIntegrationInds(self.staticmask)
         return
     
     def _picChanged(self):
@@ -75,7 +75,7 @@ class SrXplanar(object):
         '''
         dynamicmask = self.mask.dynamicMask(self.pic)
         if dynamicmask != None:
-            mask = np.logical_or(self.masknormal, dynamicmask)
+            mask = np.logical_or(self.staticmask, dynamicmask)
             self.calculate.genIntegrationInds(mask)
         return
     

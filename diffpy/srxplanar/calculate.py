@@ -126,10 +126,9 @@ class Calculate(object):
                 if dataind<leng:
                     data = picflat[indlow[i]:indhigh[i]]
                     datavar = picvarflat[indlow[i]:indhigh[i]]
-                    azimuth = azimuthflat[indlow[i]:indhigh[i]]
                     if self.selfcorrenable:
                         medianint = np.median(data)
-                        ind1 = np.logical_and(medianint*0.2<data, data<medianint*5)
+                        ind1 = np.logical_and(medianint*0.5<data, data<medianint*2)
                         data = data[ind1]
                         datavar = datavar[ind1]
                     intensity[dataind] = np.mean(data)
@@ -147,7 +146,7 @@ class Calculate(object):
                     data = picflat[indlow[i]:indhigh[i]]
                     if self.selfcorrenable:
                         medianint = np.median(data)
-                        ind1 = np.logical_and(medianint*0.2<data, data<medianint*5)
+                        ind1 = np.logical_and(medianint*0.5<data, data<medianint*2)
                         data = data[ind1]
                     intensity[dataind] = np.mean(data)
             rv = np.vstack([self.tthorqoutput, intensity])
@@ -234,15 +233,19 @@ class Calculate(object):
         return Q
     
     def genCorrectionMatrix(self):
-        '''apply solid angle correction or polarization correction (powder) on tmatrix
-        return:     2darray, correction to apply on the image
+        '''generate correction matrix. multiple the 2D raw counts array by this correction matrix
+        to get corrected raw counts. It will calculate solid angle correction or polarization correction.
+        
+        return: 2d array, correction matrix to apply on the image
         '''
         rv = self._solidAngleCorrection() * self._polarizationCorrection()
         return rv
 
     def _solidAngleCorrection(self):
-        '''generate correction matrix of soild angle correction for 2D flat detector. 
-        return:    2darray, float, correction matrix'''
+        '''generate correction matrix of soild angle correction for 2D flat detector.
+         
+        return: 2d array, correction matrix to apply on the image
+        '''
         if self.sacorrectionenable:
             sourcezr = self.distance * np.cos(self.tilt)
             correction = (self.dmatrix / sourcezr) 
@@ -252,9 +255,10 @@ class Calculate(object):
     
     def _polarizationCorrection(self):
         '''generate correction matrix of polarization correction for powder diffraction for 2D flat detector.
-        require the polarization factor in configuration. 
+        require the self.polcorrectf factor in configuration.
 
-        return:    2darray, float, correction matrix'''
+        return: 2d array, correction matrix to apply on the image
+        '''
         if self.polcorrectionenable:
             tthmatrix = self.tthorqmatrix if self.integrationspace == 'twotheta' else self.genTTHMatrix() 
             azimuthmatrix = self.azimuthmatrix
