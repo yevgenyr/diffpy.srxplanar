@@ -23,12 +23,8 @@ from diffpy.confutils.config import ConfigBase, initConfigClass
 from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, _configPropertyRW
 
 class SrXplanarConfig(ConfigBase):
-    '''Class used for storing the configuration value. It bases on the configparser class provided by python core'''
-    '''Class used for storing the configuration value and process cmd command
-    config: ConfigParser.ConfigParser
-    args: argparse
+    '''config class, based on ConfigBase class in diffpy.confutils
     '''
-    
     # optdata contains these keys:
     # full(f), short(s), help(h), type(t), action(a), nargs(n), default(d), choices(c), required(r), dest, const
     
@@ -224,15 +220,15 @@ class SrXplanarConfig(ConfigBase):
             'd':False,}],
         ]
     
-    #configlist, store the options name for each sections
-    #_configlist = {} 
-    
-    #default config file path and name, overload it for your config class
+    #default config file path and name
     _defaultconfigpath = ['srxplanar.cfg', 'SrXplanar.cfg']
     
     def _additionalInit(self):
-        '''method called in init process, overload it
-        this method will be called after all options in self._optdata are processced and before reading config from file/args/kwargs
+        '''method called in init process
+        this method will be called after all options in self._optdata are processed, i.e. all options are created. 
+        and before reading config from file/args/kwargs
+        
+        add degree/rad delegation for rotation, tilt, tthstep, tthmax
         '''
         for name in ['rotation', 'tilt', 'tthstep', 'tthmax']:
             setattr(self.__class__, name, _configPropertyRad(name+'d'))
@@ -241,11 +237,13 @@ class SrXplanarConfig(ConfigBase):
     
     def _additionalUpdataSelf(self, **kwargs):
         '''additional process called in self._updateSelf, this method is called before 
-        self._copySelftoConfig()
+        self._copySelftoConfig(), i.e. before copy options value to self.config (config file)
+        
+        check the tthmaxd and qmax, and set tthorqmax, tthorqstep according to integration space
+        
+        param kwargs: optional kwargs
         '''
-        #test if tthmax or qmax has changed
         self.tthmaxd, self.qmax = checkMax(self)
-        #self._checkStep()
         if self.integrationspace == 'twotheta':
             self.tthorqmax = self.tthmax
             self.tthorqstep = self.tthstep
@@ -255,6 +253,17 @@ class SrXplanarConfig(ConfigBase):
         return
     
     def _additionalPostProcessing(self, nofit2d=False, **kwargs):
+        '''post processing after parse args or kwargs, this method is called after 
+        in self._postPocessing and before creating config file action  
+        
+        load fit2d config if specified in config, and set nocalculatio flag when create 
+        config or create mask
+        
+        param nofit2d: boolean, if True, it will skip loading fit2d calibration, this is useful
+            when you reload/update some parameters but don't want to reload fit2d calibration 
+            results.
+        param kwargs: optional kwargs
+        '''
         if not nofit2d:
             self._loadFromFit2D(self.fit2dconfig)
         if self.createconfig!='' or self.createconfigfull!='':
@@ -266,24 +275,23 @@ class SrXplanarConfig(ConfigBase):
     def _loadFromFit2D(self, filename):
         '''load parameters from fit2d calibration information. copy/paste the fit2d calibration 
         results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
+    
+        param filename: str, file name (with full path if not in current dir) of fit2d file,
+            or a string containing the calibraiton parameters copy from fit2d.
         '''
         rv = parseFit2D(filename)
         for optname in rv.keys():
             setattr(self, optname, rv[optname])
         self._updateSelf()
         return
-    
-    def _checkStep(self):
-        tthstep = self.xpixelsize / self.distance 
-        qstep = 4 * np.pi * np.sin(tthstep / 2.0) / self.wavelength
-        if np.abs(tthstep - self.tthstep)/tthstep > 0.05:
-            self.xrdtthstep = tthstep
-        if np.abs(qstep - self.qstep)/qstep > 0.05:
-            self.xrdqstep = qstep
-        return
 
 def checkMax(config):
-    '''check and change tthmax and qmax to actual tthmax and qmax of image 
+    '''calculate the max twotheta angle (and q) of a detector with current geometry
+    
+    param config: SrXplanarConfig, config instance stores the geometry parameters
+    
+    return: [tthmaxd, qmax], max twotheta angle(in degree) and max q value of current
+        detector.
     '''
     xdimension = getattr(config, 'xdimension')
     ydimension = getattr(config, 'ydimension')
@@ -322,6 +330,12 @@ def checkMax(config):
 def parseFit2D(filename):
     '''load parameters from fit2d calibration information. copy/paste the fit2d calibration 
     results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
+    
+    param filename: str, file name (with full path if not in current dir) of fit2d file,
+        or a string containing the calibraiton parameters copy from fit2d.
+        
+    return: dict, including 'xbeamcenter', 'ybeamcenter', 'wavelength', 'rotationd'(angle of ratation), 
+        'tiltd'(angle of tilt rotation)
     '''
     rv = {}
     def findFloat(line):
@@ -344,9 +358,7 @@ def parseFit2D(filename):
             elif re.search('Refined tilt plane rotation angle', line):
                 rv['rotationd'] = findFloat(line)[0]
             elif re.search('Refined tilt angle', line):
-                rv['tiltd'] = findFloat(line)[0]
-            elif re.search('Refined wavelength', line):
-                rv['wavelength'] = findFloat(line)[0]            
+                rv['tiltd'] = findFloat(line)[0]            
     return rv
 
 initConfigClass(SrXplanarConfig)

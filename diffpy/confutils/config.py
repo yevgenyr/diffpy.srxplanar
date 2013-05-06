@@ -124,12 +124,6 @@ class ConfigBase(object):
             'd':[1,1,1,1,50],}],
         ]
     
-    #_optdatalist = _optdatalistpre + _optdatalist + _optdatalistext
-    #_optdata = dict(_optdatalistpre + _optdatalist + _optdatalistext)
-        
-    #configlist, store the options name for each sections
-    #_configlist = OrderedDict({})
-    
     #default config file path and name, overload it for your config class
     _defaultconfigpath = ['config.cfg']
     
@@ -147,7 +141,7 @@ class ConfigBase(object):
     
     #example, overload it
     def _additionalInit(self):
-        '''method called in init process, overload it!
+        '''method called in init process
         this method will be called after all options in self._optdata are processed, i.e. all options are created. 
         and before reading config from file/args/kwargs
         '''
