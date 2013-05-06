@@ -18,7 +18,9 @@ import ConfigParser
 import re, os, sys
 from functools import partial
 import argparse
-from diffpy.confutils.config import ConfigBase, _configPropertyRad, _configPropertyR, _configPropertyRW
+
+from diffpy.confutils.config import ConfigBase, initConfigClass
+from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, _configPropertyRW
 
 class SrXplanarConfig(ConfigBase):
     '''Class used for storing the configuration value. It bases on the configparser class provided by python core'''
@@ -243,8 +245,6 @@ class SrXplanarConfig(ConfigBase):
         '''
         #test if tthmax or qmax has changed
         self.tthmaxd, self.qmax = checkMax(self)
-        
-        
         #self._checkStep()
         if self.integrationspace == 'twotheta':
             self.tthorqmax = self.tthmax
@@ -349,6 +349,7 @@ def parseFit2D(filename):
                 rv['wavelength'] = findFloat(line)[0]            
     return rv
 
+initConfigClass(SrXplanarConfig)
 
 if __name__=='__main__':
     a = SrXplanarConfig()
