@@ -63,7 +63,8 @@ class Calculate(object):
         self.xr = (np.arange(self.xdimension, dtype=float) - self.xbeamcenter + 0.5) * self.xpixelsize
         self.yr = (np.arange(self.ydimension, dtype=float) - self.ybeamcenter + 0.5) * self.ypixelsize
         self.dmatrix = self.genDistanceMatrix()
-        
+        self.azimuthmatrix = np.arctan2(self.yr.reshape(self.ydimension,1), 
+                                        self.xr.reshape(1,self.xdimension))
         #set tth or q grid
         if self.integrationspace == 'twotheta':
             self.tthorq = self.tth = np.arange(0.0, self.tthmax, self.tthstep)
@@ -109,6 +110,7 @@ class Calculate(object):
         
         retrun: 2d array, [tthorq, intensity, unceratinty] or [tthorq, intensity]
         '''
+        import matplotlib.pyplot as plt 
         
         ind = self.ind
         indlow = self.indlow
@@ -124,6 +126,7 @@ class Calculate(object):
                 if dataind<leng:
                     data = picflat[indlow[i]:indhigh[i]]
                     datavar = picvarflat[indlow[i]:indhigh[i]]
+                    azimuth = azimuthflat[indlow[i]:indhigh[i]]
                     if self.selfcorrenable:
                         medianint = np.median(data)
                         ind1 = np.logical_and(medianint*0.2<data, data<medianint*5)
@@ -253,9 +256,11 @@ class Calculate(object):
 
         return:    2darray, float, correction matrix'''
         if self.polcorrectionenable:
-            tthmatrix = self.genTTHMatrix()
-            a = (1.0 - self.polcorrectf) / (1.0 + self.polcorrectf)
-            p = 1.0 / ((1.0 + a * (np.cos(tthmatrix)) ** 2) / (1.0 + a))
+            tthmatrix = self.tthorqmatrix if self.integrationspace == 'twotheta' else self.genTTHMatrix() 
+            azimuthmatrix = self.azimuthmatrix
+            p = 0.5 * (1 + (np.cos(tthmatrix))**2)
+            p1 = 0.5 * self.polcorrectf * np.cos(2*azimuthmatrix) *  (np.sin(tthmatrix))**2
+            p = 1.0 / (p-p1)
         else:
             p = np.ones((self.ydimension, self.xdimension))
         return p
