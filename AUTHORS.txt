@@ -1,6 +1,11 @@
-This code was developed to integrate 2D diffraction pattern to 1D diffraction intensity and propagate the uncertainty. 
-The main contributors to this package were:
+The main contributors to the SrXplanar software were:
 
     Xiaohao Yang
 
-For more information email sb2896@columbia.edu
+This project was much improved by testing, feedback and suggestions
+from the Billinge-group members at the Applied Physics and Applied
+Mathematics Department of the Columbia University in New York and
+at the Condensed Matter Physics and Materials Science Department
+at the Brookhaven National Laboratory.
+
+For more information about the SrXplanar project email sb2896@columbia.edu

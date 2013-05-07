@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-# Installation script for diffpy.pdfgetx
+# Installation script for diffpy.srxplanar
 
 from setuptools import setup, find_packages
 
 # define distribution
 dist = setup(
         name = 'diffpy.srxplanar',
-        version = '0.1',
+        version = '0.2',
         namespace_packages = ['diffpy'],
         packages = find_packages(),
         entry_points = {
@@ -17,7 +17,7 @@ dist = setup(
         },
         author = 'Simon J.L. Billinge',
         author_email = 'sb2896@columbia.edu',
-        description = '2D diffraction image integration and error propagation',
+        description = '2D diffraction image integration and uncertainty propagation',
         license = 'BSD',
         url = '',
         keywords = '',
