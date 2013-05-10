@@ -1,0 +1,3 @@
+recursive-include diffpy *
+prune doc
+exclude MANIFEST.in
