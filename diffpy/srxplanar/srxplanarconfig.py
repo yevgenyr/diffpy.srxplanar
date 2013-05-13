@@ -25,6 +25,35 @@ from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, _config
 class SrXplanarConfig(ConfigBase):
     '''config class, based on ConfigBase class in diffpy.confutils
     '''
+    
+    # Text to display before the argument help
+    _description = \
+    '''SrXplanar -- integrate 2D powder diffraction image to 1D with unceratinty propagation
+    ''' 
+    # Text to display after the argument help
+    _epilog = \
+    '''
+Examples:
+
+    srxplanar KFe2As2-00838.tif -c test.cfg
+    --integration using config file test.cfg
+
+    srxplanar KFe2As2-00838.tif -fit2d fit2d.txt
+    --integration using calibration information in fit2d.txt
+    
+    srxplanar *.tif -c test.cfg -s
+    --integration all .tif image and sum them into one
+    
+    srxplanar KFe2As2-00838.tif -fit2d fit2d.txt --integrationspace twotheta
+    -- integrate using calibration information in fit2d.txt and integrate into two theta space
+    
+    srxplanar --createconfig config.cfg
+    --create default (short) config file using all default value
+    
+    srxplanar --createconfigfull configfull.cfg -fit2d fit2d.txt
+    --create a complete config file using calibration information in fit2d.txt 
+    '''
+    
     # optdata contains these keys:
     # full(f), short(s), help(h), type(t), action(a), nargs(n), default(d), choices(c), required(r), dest, const
     

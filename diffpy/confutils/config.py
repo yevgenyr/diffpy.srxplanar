@@ -53,6 +53,15 @@ class ConfigBase(object):
         so in short mode, all options with 'a' will be written, in full mode, all options with 'a' or 'f' will be written
     '''
     
+    # Text to display before the argument help
+    _description = \
+    '''Description of configurations
+    ''' 
+    # Text to display after the argument help
+    _epilog = \
+    '''
+    '''
+    
     '''optdata contains these keys:
     full(f, positional), short(s), help(h), type(t), action(a), nargs(n), default(d), choices(c), required(r), dest, const
     used in argparse'''
@@ -137,6 +146,7 @@ class ConfigBase(object):
         #updata config, first detect if a default config should be load
         filename = self._findDefaultConfigFile(filename, args, **kwargs)
         self.updateConfig(filename, args, **kwargs)
+        self.initanything = filename or args or (kwargs!={})
         return
     
     #example, overload it
@@ -566,7 +576,9 @@ def initConfigClass(config):
     this funtion should be executed to generate options according to metadata defined in class
     '''
     config.config = ConfigParser.ConfigParser(dict_type = OrderedDict)
-    config.args = argparse.ArgumentParser(description='Configuration')
+    config.args = argparse.ArgumentParser(description=config._description, 
+                                          epilog=config._epilog,
+                                          formatter_class=argparse.RawDescriptionHelpFormatter)
     config._configlist = OrderedDict({})
     
     config._optdatalist = config._optdatalistpre + config._optdatalist + config._optdatalistext

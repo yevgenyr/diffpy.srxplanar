@@ -187,19 +187,25 @@ class SrXplanar(object):
         
         Usually this one is called from cmd line rather then script.
         '''
-        if not self.config.nocalculation:
-            filelist = self.loadimage.genFileList()
-            if (self.config.summation)and(len(filelist)>1):
-                image = np.zeros((self.config.ydimension, self.config.xdimension))
-                for imagefile in filelist:
-                    rv += self.loadimage.loadImage(imagefile)
-                self.integrate(rv, imagefile)
-            else:
-                for imagefile in filelist:
-                    self.integrate(imagefile)
-        #mask creating
-        elif self.config.createmask!='':
-            self.createMask()
+        #if any configrations is passed to srxplanar
+        if self.config.initanything:
+            if not self.config.nocalculation:
+                filelist = self.loadimage.genFileList()
+                if (self.config.summation)and(len(filelist)>1):
+                    image = np.zeros((self.config.ydimension, self.config.xdimension))
+                    for imagefile in filelist:
+                        image += self.loadimage.loadImage(imagefile)
+                    self.integrate(image, imagefile)
+                else:
+                    for imagefile in filelist:
+                        self.integrate(imagefile)
+            #mask creating
+            elif self.config.createmask!='':
+                self.createMask()
+        #if no config is passed to srxplanar
+        else:
+            print 'No input files or configurations'
+            self.config.args.print_help()
         return
 
 
