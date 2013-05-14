@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 ##############################################################################
 #
-# diffpy.confutils  by DANSE Diffraction group
+# diffpy.srxplanar  by DANSE Diffraction group
 #                   Simon J. L. Billinge
 #                   (c) 2010 Trustees of the Columbia University
 #                   in the City of New York.  All rights reserved.
@@ -13,19 +13,26 @@
 #
 ##############################################################################
 
-# package version
-from diffpy.confutils.version import __version__
+"""Unit tests for diffpy.confutils
+"""
 
-# some convenience imports
-from diffpy.confutils.config import ConfigBase, ConfigBase
 
-# unit tests
 def test():
-    '''Execute all unit tests for the diffpy.pdfgetx package.
+    '''Execute all unit tests for the diffpy.confutils package.
     Return a unittest TestResult object.
     '''
-    from diffpy.confutils.tests import test
-    return test()
+    import unittest
+    modulenames = '''
+        diffpy.pdfgetx.confutils.test.testconfig
+    '''.split()
+    suite = unittest.TestSuite()
+    loader = unittest.defaultTestLoader
+    for mname in modulenames:
+        exec ('import %s as mobj' % mname)
+        suite.addTests(loader.loadTestsFromModule(mobj))
+    runner = unittest.TextTestRunner()
+    result = runner.run(suite)
+    return result
 
 
 # End of file

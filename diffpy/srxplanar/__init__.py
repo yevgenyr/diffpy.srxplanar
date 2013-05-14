@@ -12,3 +12,21 @@
 # See LICENSENOTICE.txt for license information.
 #
 ##############################################################################
+
+# package version
+from diffpy.srxplanar.version import __version__
+
+# some convenience imports
+from diffpy.srxplanar.srxplanar import SrXplanar
+from diffpy.srxplanar.srxplanarconfig import SrXplanarConfig
+
+# unit tests
+def test():
+    '''Execute all unit tests for the diffpy.pdfgetx package.
+    Return a unittest TestResult object.
+    '''
+    from diffpy.srxplanar.tests import test
+    return test()
+
+
+# End of file
