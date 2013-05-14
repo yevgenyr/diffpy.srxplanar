@@ -30,7 +30,7 @@ if sys.version_info < (2,7):
 else:
     from collections import OrderedDict
 
-from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, _configPropertyRW
+from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, _configPropertyRW, str2bool
 
 class ConfigBase(object):
     '''_optdatalistpre, _optdatalist, _optdatalistext are metadata used to initialize the options, see below for examples
@@ -136,6 +136,9 @@ class ConfigBase(object):
     
     #default config file path and name, overload it for your config class
     _defaultconfigpath = ['config.cfg']
+    
+    #default first list for header
+    _defaultheaderline = 'Configuration information'
     
     def __init__(self, filename=None, args=None, **kwargs):
         '''
@@ -282,7 +285,7 @@ class ConfigBase(object):
         elif opttype.startswith('int'):
            rv = int
         elif opttype.startswith('bool'):
-           rv = bool
+           rv = str2bool
         return rv
     
     def _detectAddSections(self):
@@ -557,7 +560,7 @@ class ConfigBase(object):
         '''
         
         lines = []
-        title = '#Configuration information#' if title == None else '# %s #' % title
+        title = '# %s #' % (self._defaultheaderline if title==None else title)
         lines.append(title)
         #func decide if wirte the option to header according to mode
         #options not present in self._optdata will not be written to header

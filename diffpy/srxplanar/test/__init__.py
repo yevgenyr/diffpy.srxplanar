@@ -23,7 +23,7 @@ def test():
     '''
     import unittest
     modulenames = '''
-        diffpy.pdfgetx.confutils.test.testconfig
+        diffpy.pdfgetx.srxplanar.test.testconfig
     '''.split()
     suite = unittest.TestSuite()
     loader = unittest.defaultTestLoader

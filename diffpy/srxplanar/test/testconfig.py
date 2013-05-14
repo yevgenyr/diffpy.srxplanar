@@ -14,7 +14,7 @@
 ##############################################################################
 
 
-"""Unit tests for diffpy.confutils
+"""Unit tests for diffpy.srxplanar
 """
 
 import unittest
@@ -24,65 +24,147 @@ import re, os, sys, fnmatch
 from functools import partial
 import argparse
 
-from diffpy.confutils.config import ConfigBase, initConfigClass
-from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, _configPropertyRW
+from diffpy.srxplanar.srxplanarconfig import SrXplanarConfig
 
 ##############################################################################
 
-initConfigClass(ConfigBase)
-
 class TestConfig(unittest.TestCase):
-    testconfigdata = '''
+    testconfigdatafull = '''
+[Control]
+summation = True
+
 [Experiment]
+fit2dconfig = 
 tifdirectory = ./
+savedirectory = ./
+backgroundfile = bkg.tif
+addmask = edgemask, deadpixel
 integrationspace = qspace
 wavelength = 0.222
-rotationd = 0.3223
+xbeamcenter = 2000.0
+ybeamcenter = 2000.0
+distance = 100.0
+rotationd = 2.0
+tiltd = 2.0
+tthstepd = 0.01
+qstep = 0.01
 
 [Beamline]
-includepattern = *.tif, *.png
-excludepattern = *.non.tif, *.test.tif
+includepattern = *.tif
+excludepattern = *.dark.tif, *.test.tif
 fliphorizontal = True
+flipvertical = False
+xdimension = 3045
+ydimension = 3045
+xpixelsize = 0.1
+ypixelsize = 0.1
 
 [Others]
-regulartmatrixenable = True
-maskedges = 2, 3, 4, 5, 50
+uncertaintyenable = True
+sacorrectionenable = False
+polcorrectionenable = False
+polcorrectf = 0.50
+selfcorrenable = False
+gsasoutput = esd
+filenameplus = test
+maskedges = 20, 20, 20, 20, 200
 '''
+
+    testconfigdatashort = '''
+[Control]
+summation = True
+
+[Experiment]
+fit2dconfig = 
+tifdirectory = ./
+savedirectory = ./
+backgroundfile = bkg.tif
+addmask = edgemask, deadpixel
+integrationspace = qspace
+wavelength = 0.222
+xbeamcenter = 2000.0
+ybeamcenter = 2000.0
+distance = 100.0
+rotationd = 2.0
+tiltd = 2.0
+tthstepd = 0.01
+qstep = 0.01
+
+[Beamline]
+xdimension = 3045
+ydimension = 3045
+xpixelsize = 0.1
+ypixelsize = 0.1
+
+[Others]
+uncertaintyenable = True
+gsasoutput = esd
+filenameplus = test
+'''
+    testargsdata = '--summation True --tifdirectory ./ --savedirectory ./ --backgroundfile bkg.tif --addmask edgemask deadpixel \
+        --integrationspace qspace --wavelength 0.222 --xbeamcenter 2000.0 --ybeamcenter 2000.0 \
+        --distance 100.0 --rotationd 2.0 --tiltd 2.0 --tthstepd 0.01 --qstep 0.01 --includepattern *.tif\
+        --excludepattern *.dark.tif *.test.tif --fliphorizontal True --flipvertical False \
+        --xdimension 3045 --ydimension 3045 --xpixelsize 0.1 --ypixelsize 0.1 --uncertaintyenable True\
+        --sacorrectionenable False --polcorrectionenable False --polcorrectf 0.5 --selfcorrenable False\
+        --gsasoutput esd --filenameplus test --maskedges 20 20 20 20 200'.split()
     
-    testargsdata = '--tifdirectory ./ --integrationspace qspace --wavelength 0.222 --rotationd 0.3223 \
-        --includepattern *.tif *.png --excludepattern  *.non.tif *.test.tif --fliphorizontal True \
-        --regulartmatrixenable True --maskedges 2 3 4 5 50'.split()
-    
-    lines = testconfigdata.splitlines()
-    lines[0] = '# title #'
-    headershort = "\n".join(lines[:-1]+['']) + "\n"
+    lines = testconfigdatashort.splitlines()
+    lines[0] = '# SrXplanar configration #'
+    headershort = "\n".join(lines+['']) + "\n"
+    lines = testconfigdatafull.splitlines()
+    lines[0] = '# SrXplanar configration #'
     headerfull = "\n".join(lines+['']) + "\n"
     
     def setUp(self):
-        self.config = ConfigBase()
+        self.config = SrXplanarConfig()
         return
     
     def tearDown(self):
         self.config = None
         filelist = os.listdir('.')
-        filelist = fnmatch.filter(filelist, '*.cfg')
-        for f in filelist:
-            os.remove(f)
+        for extname in ('*.cfg', '*.tif', '*.chi', '*.fq', '*.gr'):
+            filelist1 = fnmatch.filter(filelist, extname)
+            for f in filelist1:
+                os.remove(f)
         return
     
     def assertConfig(self, config=None, mode='full'):
         config = self.config if config==None else config
+        
+        self.assertEqual(config.summation, True)
         self.assertEqual(config.tifdirectory, './')
+        self.assertEqual(config.savedirectory, './')
+        self.assertEqual(config.backgroundfile, 'bkg.tif')
+        self.assertEqual(config.addmask, ['edgemask', 'deadpixel'])
         self.assertEqual(config.integrationspace, 'qspace')
         self.assertEqual(config.wavelength, 0.222)
-        self.assertEqual(config.rotationd, 0.3223)
-        self.assertEqual(config.includepattern, ['*.tif', '*.png'])
-        self.assertEqual(config.excludepattern, ['*.non.tif', '*.test.tif'])
-        self.assertEqual(config.fliphorizontal, True)
-        self.assertEqual(config.regulartmatrixenable, True)
+        self.assertEqual(config.xbeamcenter, 2000.0)
+        self.assertEqual(config.ybeamcenter, 2000.0)
+        self.assertEqual(config.distance, 100.0)
+        self.assertEqual(config.rotationd, 2.0)
+        self.assertEqual(config.tiltd, 2.0)
+        self.assertEqual(config.tthstepd, 0.01)
+        self.assertEqual(config.qstep, 0.01)
+        self.assertEqual(config.xdimension, 3045)
+        self.assertEqual(config.ydimension, 3045)
+        self.assertEqual(config.xpixelsize, 0.1)
+        self.assertEqual(config.ypixelsize, 0.1)
+        self.assertEqual(config.uncertaintyenable, True)
+        self.assertEqual(config.gsasoutput, 'esd')
+        self.assertEqual(config.filenameplus, 'test')
         if mode=='full':
-            self.assertEqual(config.maskedges, [2, 3, 4, 5, 50])
+            self.assertEqual(config.includepattern, ['*.tif'])
+            self.assertEqual(config.excludepattern, ['*.dark.tif', '*.test.tif'])
+            self.assertEqual(config.fliphorizontal, True)
+            self.assertEqual(config.flipvertical, False)
+            self.assertEqual(config.sacorrectionenable, False)
+            self.assertEqual(config.polcorrectionenable, False)
+            self.assertEqual(config.polcorrectf, 0.50)
+            self.assertEqual(config.selfcorrenable, False)
+            self.assertEqual(config.maskedges, [20, 20, 20, 20, 200])
         return
+
     
     def test_createConfig(self):
         '''test create config file
@@ -95,30 +177,35 @@ maskedges = 2, 3, 4, 5, 50
         self.assertTrue(os.path.exists('testshort.cfg'))
         self.assertTrue(os.path.exists('testfull.cfg'))
         
-        config1 = ConfigBase(filename='testshort.cfg')
+        config1 = SrXplanarConfig(filename='testshort.cfg')
         self.assertConfig(config1, mode='short')
-        config2 = ConfigBase(filename='testfull.cfg')
+        config2 = SrXplanarConfig(filename='testfull.cfg')
         self.assertConfig(config2, mode='full')
         return
     
     def test_configfile(self):
         '''test config file
         '''
+        #full
         f = open('test.cfg', 'w')
-        f.write(self.testconfigdata)
+        f.write(self.testconfigdatafull)
         f.close()
-        
         self.config.updateConfig(filename='test.cfg')
         self.assertConfig()
+        #short
+        f = open('test.cfg', 'w')
+        f.write(self.testconfigdatashort)
+        f.close()
+        config = SrXplanarConfig(filename='test.cfg')
+        self.assertConfig(config, mode='short')
         return
     
     def test_configfile_args(self):
         '''test read config from args
         '''
         f = open('test.cfg', 'w')
-        f.write(self.testconfigdata)
+        f.write(self.testconfigdatafull)
         f.close()
-        
         self.config.updateConfig(args=['-c', 'test.cfg'])
         self.assertConfig()
         return
@@ -134,19 +221,40 @@ maskedges = 2, 3, 4, 5, 50
         '''test kwargs
         '''
         self.config.updateConfig(
+            summation = True,
             tifdirectory = './',
+            savedirectory = './',
+            backgroundfile = 'bkg.tif',
+            addmask = ['edgemask', 'deadpixel'],
             integrationspace = 'qspace',
             wavelength = 0.222,
-            rotationd = 0.3223,
-            includepattern = ['*.tif', '*.png'],
-            excludepattern = ['*.non.tif', '*.test.tif'],
+            xbeamcenter = 2000.0,
+            ybeamcenter = 2000.0,
+            distance = 100.0,
+            rotationd = 2.0,
+            tiltd = 2.0,
+            tthstepd = 0.01,
+            qstep = 0.01,
+            includepattern = ['*.tif'],
+            excludepattern = ['*.dark.tif', '*.test.tif'],
             fliphorizontal = True,
-            regulartmatrixenable = True,
-            maskedges = [2, 3, 4, 5, 50])
+            flipvertical = False,
+            xdimension = 3045,
+            ydimension = 3045,
+            xpixelsize = 0.1,
+            ypixelsize = 0.1,
+            uncertaintyenable = True,
+            sacorrectionenable = False,
+            polcorrectionenable = False,
+            polcorrectf = 0.50,
+            selfcorrenable = False,
+            gsasoutput = 'esd',
+            filenameplus = 'test',
+            maskedges = [20, 20, 20, 20, 200])
         self.assertConfig()
         return
     
-    def test_headers(self):
+    def tttest_headers(self):
         '''test header
         '''
         self.config.updateConfig(args=self.testargsdata)

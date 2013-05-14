@@ -252,6 +252,9 @@ Examples:
     #default config file path and name
     _defaultconfigpath = ['srxplanar.cfg', 'SrXplanar.cfg']
     
+    #default first list for header
+    _defaultheaderline = 'SrXplanar configration'
+    
     def _additionalInit(self):
         '''method called in init process
         this method will be called after all options in self._optdata are processed, i.e. all options are created. 

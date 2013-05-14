@@ -37,3 +37,6 @@ def _configPropertyRW(name):
                   fdel = lambda self: delattr(self, nm),
                   doc='attribute forwarded to self.config, read/write')
     return rv
+
+def str2bool(v):
+    return v.lower() in ("yes", "true", "t", "1")
