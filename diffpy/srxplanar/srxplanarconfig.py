@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 ##############################################################################
 #
-# diffpy.pdflive    by DANSE Diffraction group
+# diffpy.srxplanar  by DANSE Diffraction group
 #                   Simon J. L. Billinge
-#                   (c) 2012 Trustees of the Columbia University
+#                   (c) 2010 Trustees of the Columbia University
 #                   in the City of New York.  All rights reserved.
 #
 # File coded by:    Xiaohao Yang
 #
 # See AUTHORS.txt for a list of people who contributed.
-# See LICENSE.txt for license information.
+# See LICENSENOTICE.txt for license information.
 #
 ##############################################################################
 

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 ##############################################################################
 #
-# diffpy.pdflive    by DANSE Diffraction group
+# diffpy.confutils  by DANSE Diffraction group
 #                   Simon J. L. Billinge
-#                   (c) 2012 Trustees of the Columbia University
+#                   (c) 2010 Trustees of the Columbia University
 #                   in the City of New York.  All rights reserved.
 #
 # File coded by:    Xiaohao Yang
 #
 # See AUTHORS.txt for a list of people who contributed.
-# See LICENSE.txt for license information.
+# See LICENSENOTICE.txt for license information.
 #
 ##############################################################################
 
@@ -110,7 +110,8 @@ class ConfigBase(object):
         ['includepattern',{'sec':'Beamline',
             's':'ipattern',
             'h':'file name pattern for included files',
-            'd':'*.tif',}],
+            'n':'*',
+            'd':['*.tif'],}],
         ['excludepattern',{'sec':'Beamline',
             's':'epattern',
             'h':'file name pattern for excluded files',
@@ -126,7 +127,7 @@ class ConfigBase(object):
             'n':'?',
             'co':True,
             'd':False,}],
-        ['maskedges',{'sec':'Others',
+        ['maskedges',{'sec':'Others', 'config':'f', 'header':'f',
             'h':'mask the edge pixels, first four means the number of pixels masked in each edge \
                 (left, right, top, bottom), the last one is the radius of a region masked around the corner',
             'n':5,
@@ -215,17 +216,17 @@ class ConfigBase(object):
         return rv
             
     
-    def _getType(self, optname):
+    def _getTypeStr(self, optname):
         '''detect the type of option
         param optname: str, name of option
         
         return: string of type 
         '''
-        opttype =self._getTypeC(optname)
+        opttype =self._getTypeStrC(optname)
         return opttype
     
     @classmethod
-    def _getTypeC(cls, optname):
+    def _getTypeStrC(cls, optname):
         '''detect the type of option
         param optname: str, name of option
         
@@ -256,6 +257,33 @@ class ConfigBase(object):
                 elif type(value[0])==bool:
                     opttype = 'boollist'
         return opttype
+    
+    def _getType(self, optname):
+        '''detect the type of option
+        param optname: str, name of option
+        
+        return: type of data 
+        '''
+        opttype =self._getTypeC(optname)
+        return opttype
+    
+    @classmethod
+    def _getTypeC(cls, optname):
+        '''detect the type of option
+        param optname: str, name of option
+        
+        return: type of data
+        '''
+        opttype = cls._getTypeStrC(optname)
+        if opttype.startswith('str'):
+           rv = str
+        elif opttype.startswith('float'):
+           rv = float 
+        elif opttype.startswith('int'):
+           rv = int
+        elif opttype.startswith('bool'):
+           rv = bool
+        return rv
     
     def _detectAddSections(self):
         '''detect sections present in self._optdata and add them to self.config
@@ -296,7 +324,7 @@ class ConfigBase(object):
         param optname: string, name of option
         '''
         optdata = cls._optdata[optname]
-        opttype = cls._getTypeC(optname)
+        opttype = cls._getTypeStrC(optname)
         
         #replace currentdir in default to os.getcwd()
         if optdata['d'] =='currentdir':
@@ -319,6 +347,7 @@ class ConfigBase(object):
                 if cls._optdatanamedic.has_key(key):
                     pargs[cls._optdatanamedic[key]] = optdata[key]
             pargs['default'] = argparse.SUPPRESS
+            pargs['type'] = cls._getTypeC(optname)
             #add args
             if optdata.has_key('f'):
                 cls.args.add_argument(optname, **pargs)
@@ -350,13 +379,13 @@ class ConfigBase(object):
             for optname in optnames:
                 if self._optdata.has_key(optname):
                     secname = self._optdata[optname]['sec']
-                    opttype = self._getType(optname)
+                    opttype = self._getTypeStr(optname)
                     setattr(self, optname, self.mdict[opttype](secname, optname))
         else:
             for secname in self.config.sections():
                 for optname in self.config.options(secname):
                     if self._optdata.has_key(optname):
-                        opttype = self._getType(optname)
+                        opttype = self._getTypeStr(optname)
                         setattr(self, optname, self.mdict[opttype](secname, optname))
         return
     
@@ -371,7 +400,7 @@ class ConfigBase(object):
             for optname in optnames:
                 if self._optdata.has_key(optname):
                     secname = self._optdata[optname]['sec']
-                    opttype = self._getType(optname)
+                    opttype = self._getTypeStr(optname)
                     if opttype.endswith('list'):
                         liststr = map(str, getattr(self, optname))
                         liststring = ', '.join(liststr)
@@ -382,7 +411,7 @@ class ConfigBase(object):
             for secname in self.config.sections():
                 for optname in self.config.options(secname):
                     if self._optdata.has_key(optname):
-                        opttype = self._getType(optname)
+                        opttype = self._getTypeStr(optname)
                         if opttype.endswith('list'):
                             liststr = map(str, getattr(self, optname))
                             liststring = ', '.join(liststr)
@@ -451,6 +480,7 @@ class ConfigBase(object):
         '''
         if filename!=None:
             if os.path.exists(filename):
+                self._copySelftoConfig()
                 self.config.read(filename)
                 self._copyConfigtoSelf()
                 self._updateSelf()
@@ -535,8 +565,7 @@ class ConfigBase(object):
             mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')=='a'
         else:
             mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')!='n'
-                
-        lines = []
+    
         for secname in self._configlist.keys():
             tlines = []
             for optname in self._configlist[secname]:
@@ -547,8 +576,7 @@ class ConfigBase(object):
             if len(tlines)>0:
                 lines.append("[%s]" % secname)
                 lines.extend(tlines)
-                lines.append('')
-        lines.append('# data #')         
+                lines.append('')         
         rv = "\n".join(lines) + "\n"
         return rv
     
@@ -570,7 +598,7 @@ class ConfigBase(object):
             self.createconfigfull = ''
         return
     
-#VERY IMPORTANT!!!
+#IMPORTANT if you want to add options as class attributes!!!
 def initConfigClass(config):
     '''init config class and add options to class
     this funtion should be executed to generate options according to metadata defined in class
