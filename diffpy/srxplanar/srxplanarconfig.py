@@ -207,7 +207,7 @@ Examples:
             'h':'propagate uncertainty',
             'n':'?',
             'co':True,
-            'd':False,}],
+            'd':True,}],
         ['sacorrectionenable',{'sec':'Others','config':'f',
             's':'sacorr',
             'h':'enable solid angle correction',
@@ -390,7 +390,7 @@ def parseFit2D(filename):
             elif re.search('Refined tilt plane rotation angle', line):
                 rv['rotationd'] = findFloat(line)[0]
             elif re.search('Refined tilt angle', line):
-                rv['tiltd'] = findFloat(line)[0]            
+                rv['tiltd'] = findFloat(line)[0]
     return rv
 
 initConfigClass(SrXplanarConfig)
