@@ -140,8 +140,11 @@ class ConfigBase(object):
     #default first list for header
     _defaultheaderline = 'Configuration information'
     
+
     def __init__(self, filename=None, args=None, **kwargs):
-        '''
+        '''init the class and update the values of options if specified in 
+        filename/args/kwargs
+        
         param filename: str, file name of config file
         param filename: list of str, args passed from cmd
         param kwargs: optional kwargs
@@ -155,9 +158,10 @@ class ConfigBase(object):
     
     #example, overload it
     def _additionalInit(self):
-        '''method called in init process
-        this method will be called after all options in self._optdata are processed, i.e. all options are created. 
-        and before reading config from file/args/kwargs
+        '''method called in init process, overload it!
+        
+        this method will be called after all options in self._optdata are processed, 
+        i.e. all options are created and before reading config from file/args/kwargs
         '''
         for name in ['rotation']:
             setattr(self.__class__, name, _configPropertyRad(name+'d'))
@@ -492,6 +496,12 @@ class ConfigBase(object):
     def updateConfig(self, filename=None, args=None, **kwargs):
         '''update config according to config file, args(from sys.argv) or **kwargs
         
+        first process file/args/kwargs passed to this method, 
+        then read a configfile if specified in args or kwargs
+        then call self._postProcessing()
+            call self._additionalPostProcessing()
+            then write config file if specified in args/kwargs
+        
         param filename: string, name of config file
         param args: list of str, usually be sys.argv
         param **kwargs: you can use like 'xbeamcenter=1024' or a dict to update the value of xbeamcenter
@@ -548,8 +558,10 @@ class ConfigBase(object):
         return
     
     def getHeader(self, title=None, mode='short'):
-        '''get a header of configurations values, by default, all options are written to a header, 
-        It can be disabled by set 'header' to False in self._optdata
+        '''get a header of configurations values, 
+        
+        by default, all options are written to a header, it can be disabled by 
+        set 'header' to False in self._optdata
         
         param title: str, title of header
         param mode: string, 'short' or 'full' ('s' or 'f'). 
@@ -601,7 +613,7 @@ class ConfigBase(object):
             self.createconfigfull = ''
         return
     
-#IMPORTANT if you want to add options as class attributes!!!
+#IMPORTANT call this function if you want to add options as class attributes!!!
 def initConfigClass(config):
     '''init config class and add options to class
     this funtion should be executed to generate options according to metadata defined in class
