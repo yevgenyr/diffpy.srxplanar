@@ -66,6 +66,7 @@ class Mask(object):
             for maskfit2d in maskfit2ds:
                 if os.path.exists(maskfit2d):
                     immask = fabio.openimage.openimage(maskfit2d)
+                    #rv += self.flipImage(immask.data)
                     rv += immask.data
         #.npy mask
         npymasks = filter(lambda msk: msk.endswith('.npy'), addmask)

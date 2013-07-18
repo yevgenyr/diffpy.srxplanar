@@ -181,8 +181,8 @@ class Calculate(object):
         cosr = np.cos(self.rotation)
         sint = np.sin(self.tilt)
         cost = np.cos(self.tilt)
-        sourcexr = self.distance * sint * cosr
-        sourceyr = -self.distance * sint * sinr
+        sourcexr = -self.distance * sint * cosr
+        sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
         
         dmatrix = np.zeros((self.ydimension, self.xdimension), dtype=float)
@@ -201,8 +201,8 @@ class Calculate(object):
         cosr = np.cos(self.rotation)
         sint = np.sin(self.tilt)
         cost = np.cos(self.tilt)
-        sourcexr = self.distance * sint * cosr
-        sourceyr = -self.distance * sint * sinr
+        sourcexr = -self.distance * sint * cosr
+        sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
         
         tthmatrix1 = np.zeros((self.ydimension,self.xdimension), dtype=float)
@@ -220,8 +220,8 @@ class Calculate(object):
         cosr = np.cos(self.rotation)
         sint = np.sin(self.tilt)
         cost = np.cos(self.tilt)
-        sourcexr = self.distance * sint * cosr
-        sourceyr = -self.distance * sint * sinr
+        sourcexr = -self.distance * sint * cosr
+        sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
         
         tthmatrix1 = np.zeros((self.ydimension,self.xdimension), dtype=float)

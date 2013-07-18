@@ -241,7 +241,7 @@ Examples:
             'h':'mask the edge pixels, first four means the number of pixels masked in each edge \
                 (left, right, top, bottom), the last one is the radius of a region masked around the corner',
             'n':5,
-            'd':[10,10,10,10,100],}],
+            'd':[20,20,20,20,100],}],
         ['nocalculation',{'sec':'Others','config':'n','header':'n',
             'h':'set True to disable all calculation, will automaticly set True if createconfig or createmask',
             'n':'?',
