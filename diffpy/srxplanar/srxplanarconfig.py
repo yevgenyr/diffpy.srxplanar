@@ -169,7 +169,7 @@ Examples:
             's':'ipattern',
             'h':'file name pattern for included files',
             'n':'*',
-            'd':['*.tif'],}],
+            'd':['*.tif', '*.tif.bz2'],}],
         ['excludepattern',{'sec':'Beamline','header':'n','config':'f',
             's':'epattern',
             'h':'file name pattern for excluded files',
