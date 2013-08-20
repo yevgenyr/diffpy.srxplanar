@@ -1,4 +1,4 @@
-PKGNAME = diffpy.Structure
+PKGNAME = diffpy.srxplanar
 OUTPUT = html
 WEBDOCDIR = login.cacr.caltech.edu:/cacr/home/proj/danse/docs.danse.us/docroot/diffraction
 WEBNAME = $(PKGNAME)-1.1
