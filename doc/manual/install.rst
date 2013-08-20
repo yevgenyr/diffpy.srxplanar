@@ -1,6 +1,7 @@
 Installation
 ========================================================================
 
+.. index:: Software requirements
 
 Software requirements
 ------------------------------------------------------------------------
@@ -54,6 +55,7 @@ installation process.  The easiest way to check is to start the
 :program:`Command Prompt`, type there ``python`` and see if this
 starts the Python interpreter.
 
+.. index:: PDFgetX3 installation
 
 PDFgetX3 installation
 ------------------------------------------------------------------------
