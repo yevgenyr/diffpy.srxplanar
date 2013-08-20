@@ -21,7 +21,8 @@ from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
 
 class Calculate(object):
-    '''provide methods for integration, variance calculation and distance/Q matrix calculation etc.
+    '''
+    provide methods for integration, variance calculation and distance/Q matrix calculation etc.
     '''
     # define configuration properties that are forwarded to self.config
     xdimension = _configPropertyR('xdimension')
@@ -57,7 +58,8 @@ class Calculate(object):
         return
     
     def prepareCalculation(self):
-        '''prepare data for calculation
+        '''
+        prepare data for calculation
         '''
         self.xydimension = self.xdimension * self.ydimension
         self.xr = (np.arange(self.xdimension, dtype=float) - self.xbeamcenter + 0.5) * self.xpixelsize
@@ -77,12 +79,13 @@ class Calculate(object):
         return
     
     def genIntegrationInds(self, mask=None):
-        '''generate index used in integration
+        '''
+        generate index used in integration
         picflat[ind[indlow[i]]:ind[indhigh[i]]] belong to one tth or q bin
         
-        param mask: mask 2D array, same dimension as image, 1 for masked pixel
+        :param mask: mask 2D array, same dimension as image, 1 for masked pixel
         
-        return: self.ind, self.indlow, self.indhigh: see usage before
+        :return: self.ind, self.indlow, self.indhigh: see usage before
         '''
         if mask == None:
             mask = np.zeros((self.ydimension, self.xdimension), dtype=boolean)
@@ -99,16 +102,17 @@ class Calculate(object):
         return self.ind, self.indlow, self.indhigh
     
     def intensity(self, pic, picvar=None):
-        '''2D to 1D image integration, intensity of pixels are binned and then take average,
+        '''
+        2D to 1D image integration, intensity of pixels are binned and then take average,
         if self.selfcorrenable is True, then pixels whose intensity are too high/low will be dropped.
         
         self.ind, self.indlow, self.indhigh should be calculated first
         uncertainty will be calculated if self.unceratintyenable=True
         
-        param pic: 2D array, array of raw counts, raw counts should be corrected
-        param picvar: 2D array, variance of raw counts, if None but required in calculation, use zero matrix instead.
+        :param pic: 2D array, array of raw counts, raw counts should be corrected
+        :param picvar: 2D array, variance of raw counts, if None but required in calculation, use zero matrix instead.
         
-        retrun: 2d array, [tthorq, intensity, unceratinty] or [tthorq, intensity]
+        :retrun: 2d array, [tthorq, intensity, unceratinty] or [tthorq, intensity]
         '''
         import matplotlib.pyplot as plt 
         
@@ -154,12 +158,13 @@ class Calculate(object):
         return rv
     
     def varianceLocal(self, pic):
-        '''calculate the variance of raw counts of each pixel are calculated according to their 
+        '''
+        calculate the variance of raw counts of each pixel are calculated according to their 
         loacl variance.
         
-        param picflat: 1d array, flattend image array
+        :param picflat: 1d array, flattend image array
         
-        return: 2d array, variance of each pixel
+        :return: 2d array, variance of each pixel
         '''
         
         picavg = snf.uniform_filter(pic, 5, mode='wrap')
@@ -174,9 +179,11 @@ class Calculate(object):
         return var
     
     def genDistanceMatrix(self):
-        '''Calculate the distance matrix
+        '''
+        Calculate the distance matrix
         
-        return: 2d array, distance between source and each pixel'''
+        :return: 2d array, distance between source and each pixel
+        '''
         sinr = np.sin(self.rotation)
         cosr = np.cos(self.rotation)
         sint = np.sin(self.tilt)
@@ -193,9 +200,11 @@ class Calculate(object):
         return self.dmatrix
 
     def genTTHMatrix(self):
-        '''Calculate the diffraction angle matrix 
+        '''
+        Calculate the diffraction angle matrix 
         
-        return: 2d array, two theta angle of each pixel's center'''
+        :return: 2d array, two theta angle of each pixel's center
+        '''
     
         sinr = np.sin(self.rotation)
         cosr = np.cos(self.rotation)
@@ -213,9 +222,11 @@ class Calculate(object):
         return tthmatrix
     
     def genQMatrix(self):
-        '''Calculate the q matrix 
+        '''
+        Calculate the q matrix 
         
-        return: 2d array, q value of each pixel's center'''
+        :return: 2d array, q value of each pixel's center
+        '''
         sinr = np.sin(self.rotation)
         cosr = np.cos(self.rotation)
         sint = np.sin(self.tilt)
@@ -233,18 +244,20 @@ class Calculate(object):
         return Q
     
     def genCorrectionMatrix(self):
-        '''generate correction matrix. multiple the 2D raw counts array by this correction matrix
+        '''
+        generate correction matrix. multiple the 2D raw counts array by this correction matrix
         to get corrected raw counts. It will calculate solid angle correction or polarization correction.
         
-        return: 2d array, correction matrix to apply on the image
+        :return: 2d array, correction matrix to apply on the image
         '''
         rv = self._solidAngleCorrection() * self._polarizationCorrection()
         return rv
 
     def _solidAngleCorrection(self):
-        '''generate correction matrix of soild angle correction for 2D flat detector.
+        '''
+        generate correction matrix of soild angle correction for 2D flat detector.
          
-        return: 2d array, correction matrix to apply on the image
+        :return: 2d array, correction matrix to apply on the image
         '''
         if self.sacorrectionenable:
             sourcezr = self.distance * np.cos(self.tilt)
@@ -254,10 +267,11 @@ class Calculate(object):
         return correction
     
     def _polarizationCorrection(self):
-        '''generate correction matrix of polarization correction for powder diffraction for 2D flat detector.
+        '''
+        generate correction matrix of polarization correction for powder diffraction for 2D flat detector.
         require the self.polcorrectf factor in configuration.
 
-        return: 2d array, correction matrix to apply on the image
+        :return: 2d array, correction matrix to apply on the image
         '''
         if self.polcorrectionenable:
             tthmatrix = self.tthorqmatrix if self.integrationspace == 'twotheta' else self.genTTHMatrix() 

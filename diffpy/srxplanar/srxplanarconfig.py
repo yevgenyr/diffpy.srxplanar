@@ -23,12 +23,14 @@ from diffpy.confutils.config import ConfigBase, initConfigClass
 from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, _configPropertyRW
 
 class SrXplanarConfig(ConfigBase):
-    '''config class, based on ConfigBase class in diffpy.confutils
+    '''
+    config class, based on ConfigBase class in diffpy.confutils
     '''
     
     # Text to display before the argument help
     _description = \
-    '''SrXplanar -- integrate 2D powder diffraction image to 1D with unceratinty propagation
+    '''
+    SrXplanar -- integrate 2D powder diffraction image to 1D with unceratinty propagation
     ''' 
     # Text to display after the argument help
     _epilog = \
@@ -256,7 +258,8 @@ Examples:
     _defaultheaderline = 'SrXplanar configration'
     
     def _additionalInit(self):
-        '''method called in init process
+        '''
+        method called in init process
         this method will be called after all options in self._optdata are processed, i.e. all options are created. 
         and before reading config from file/args/kwargs
         
@@ -268,12 +271,13 @@ Examples:
         return
     
     def _additionalUpdataSelf(self, **kwargs):
-        '''additional process called in self._updateSelf, this method is called before 
+        '''
+        additional process called in self._updateSelf, this method is called before 
         self._copySelftoConfig(), i.e. before copy options value to self.config (config file)
         
         check the tthmaxd and qmax, and set tthorqmax, tthorqstep according to integration space
         
-        param kwargs: optional kwargs
+        :param kwargs: optional kwargs
         '''
         self.tthmaxd, self.qmax = checkMax(self)
         if self.integrationspace == 'twotheta':
@@ -285,16 +289,17 @@ Examples:
         return
     
     def _additionalPostProcessing(self, nofit2d=False, **kwargs):
-        '''post processing after parse args or kwargs, this method is called after 
+        '''
+        post processing after parse args or kwargs, this method is called after 
         in self._postPocessing and before creating config file action  
         
         load fit2d config if specified in config, and set nocalculatio flag when create 
         config or create mask
         
-        param nofit2d: boolean, if True, it will skip loading fit2d calibration, this is useful
+        :param nofit2d: boolean, if True, it will skip loading fit2d calibration, this is useful
             when you reload/update some parameters but don't want to reload fit2d calibration 
             results.
-        param kwargs: optional kwargs
+        :param kwargs: optional kwargs
         '''
         if not nofit2d:
             self._loadFromFit2D(self.fit2dconfig)
@@ -305,10 +310,11 @@ Examples:
         return
     
     def _loadFromFit2D(self, filename):
-        '''load parameters from fit2d calibration information. copy/paste the fit2d calibration 
+        '''
+        load parameters from fit2d calibration information. copy/paste the fit2d calibration 
         results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
     
-        param filename: str, file name (with full path if not in current dir) of fit2d file,
+        :param filename: str, file name (with full path if not in current dir) of fit2d file,
             or a string containing the calibraiton parameters copy from fit2d.
         '''
         rv = parseFit2D(filename)
@@ -318,11 +324,12 @@ Examples:
         return
 
 def checkMax(config):
-    '''calculate the max twotheta angle (and q) of a detector with current geometry
+    '''
+    calculate the max twotheta angle (and q) of a detector with current geometry
     
-    param config: SrXplanarConfig, config instance stores the geometry parameters
+    :param config: SrXplanarConfig, config instance stores the geometry parameters
     
-    return: [tthmaxd, qmax], max twotheta angle(in degree) and max q value of current
+    :return: [tthmaxd, qmax], max twotheta angle(in degree) and max q value of current
         detector.
     '''
     xdimension = getattr(config, 'xdimension')
@@ -360,13 +367,14 @@ def checkMax(config):
     return tthmaxd, qmax
 
 def parseFit2D(filename):
-    '''load parameters from fit2d calibration information. copy/paste the fit2d calibration 
+    '''
+    load parameters from fit2d calibration information. copy/paste the fit2d calibration 
     results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
     
-    param filename: str, file name (with full path if not in current dir) of fit2d file,
+    :param filename: str, file name (with full path if not in current dir) of fit2d file,
         or a string containing the calibraiton parameters copy from fit2d.
         
-    return: dict, including 'xbeamcenter', 'ybeamcenter', 'wavelength', 'rotationd'(angle of ratation), 
+    :return: dict, including 'xbeamcenter', 'ybeamcenter', 'wavelength', 'rotationd'(angle of ratation), 
         'tiltd'(angle of tilt rotation)
     '''
     rv = {}

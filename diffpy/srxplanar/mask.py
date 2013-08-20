@@ -22,11 +22,11 @@ import os
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
 class Mask(object):
-    '''provide methods for mask generation, including:
-    static mask:
-        fit2d (.msk) mask, tif mask, npy mask, masking edge pixels, 
-    dymanic mask:
-        masking dead pixels, bright pixels
+    '''
+    provide methods for mask generation, including:
+    
+    static mask: fit2d (.msk) mask, tif mask, npy mask, masking edge pixels, 
+    dymanic mask: masking dead pixels, bright pixels
     '''
     
     xdimension = _configPropertyR('xdimension')
@@ -47,15 +47,16 @@ class Mask(object):
         return
 
     def staticMask(self, addmask = None):
-        '''create a static mask according existing mask file. This mask remain unchanged for different images
+        '''
+        create a static mask according existing mask file. This mask remain unchanged for different images
         
-        param addmask: list of string, file name of mask and/or 'edge', 
+        :param addmask: list of string, file name of mask and/or 'edge', 
             mask file supported: .msk, .npy, .tif file, ATTN: mask array should be already flipped, 
             and 1 (or larger) stands for masked pixels, 0(<0) stands for unmasked pixels
             if 'edge' is specified here. it will create a mask that mask the pixel near the edge of detector,
             require self.maskedges 
         
-        return: 2d array of boolean, 1 stands for masked pixel
+        :return: 2d array of boolean, 1 stands for masked pixel
         '''
         addmask = self.addmask if addmask==None else addmask
         
@@ -91,14 +92,15 @@ class Mask(object):
         return self.staticmask
     
     def dynamicMask(self, pic, addmask = None):
-        '''create a dynamic mask according to image array. This mask changes for different images
+        '''
+        create a dynamic mask according to image array. This mask changes for different images
         
-        param pic: 2d array, image array to be processed
-        param addmask: list of string, ['deadpixel', 'brightpixel']  
+        :param pic: 2d array, image array to be processed
+        :param addmask: list of string, ['deadpixel', 'brightpixel']  
             deadpixel: pixels with much lower intensity compare to adjacent pixels will be masked
             brightpixel: pixels with much higher intensity compare to adjacent pixels will be masked 
              
-        return: 2d array of boolean, 1 stands for masked pixel
+        :return: 2d array of boolean, 1 stands for masked pixel
         '''
         
         addmask = self.addmask if addmask==None else addmask
@@ -122,11 +124,12 @@ class Mask(object):
         return self.dynamicmask
     
     def deadPixelMask(self, pic):
-        '''pixels with much lower intensity compare to adjacent pixels will be masked
+        '''
+        pixels with much lower intensity compare to adjacent pixels will be masked
         
-        param pic: 2d array, image array to be processed
+        :param pic: 2d array, image array to be processed
         
-        return: 2d array of boolean, 1 stands for masked pixel
+        :return: 2d array of boolean, 1 stands for masked pixel
         '''
         avgpic = np.average(pic)
         ks = np.ones((5,5))
@@ -137,31 +140,34 @@ class Mask(object):
         return picb
     
     def brightPixelMask(self, pic, size=5, r = 1.2):
-        '''pixels with much higher intensity compare to adjacent pixels will be masked,
+        '''
+        pixels with much higher intensity compare to adjacent pixels will be masked,
         this mask is used when there are some bright spots/pixels whose intensity is higher 
         than its neighbors but not too high. Only use this on a very good powder averaged 
         data. Otherwise it may mask wrong pixels. 
+        
         This mask has similar functions as 'selfcorr' function. However, this mask will only 
         consider pixels' local neighbors pixels and tend to mask more pixels. While 'selfcorr' 
         function compare one pixel to other pixels in same bin.
         
-        param pic: 2d array, image array to be processed
-        param size: int, size of local area to test if a pixel is a bright pixel
-        param r: float, a threshold for masked pixels   
+        :param pic: 2d array, image array to be processed
+        :param size: int, size of local area to test if a pixel is a bright pixel
+        :param r: float, a threshold for masked pixels   
         
-        return: 2d array of boolean, 1 stands for masked pixel
+        :return: 2d array of boolean, 1 stands for masked pixel
         '''
         rank = snf.rank_filter(pic, -size, size)
         ind = snm.binary_dilation(pic>rank*r, np.ones((3,3)))
         return ind
     
     def edgeMask(self, edges=None):
-        '''mask the pixels near edge and around corner
+        '''
+        mask the pixels near edge and around corner
         
-        param edges: list of int (length of 5), first 4 are numbers of pixels masked at each edge
+        :param edges: list of int (length of 5), first 4 are numbers of pixels masked at each edge
             in (left, right, top, bottom), last one is the radius of round cut at the corner
         
-        return: 2d array of boolean, 1 stands for masked pixel
+        :return: 2d array of boolean, 1 stands for masked pixel
         '''
         edges = self.maskedges if edges==None else edges
         rv = np.zeros((self.ydimension, self.xdimension))
@@ -187,21 +193,23 @@ class Mask(object):
         return rv
     
     def undersample(self, undersamplerate):
-        '''a special mask used for undesampling image. It will create a mask that
+        '''
+        a special mask used for undesampling image. It will create a mask that
         discard (total number*(1-undersamplerate)) pixels
-        param undersamplerate: float, 0~1, ratio of pixels to keep
+        :param undersamplerate: float, 0~1, ratio of pixels to keep
         
-        return: 2d array of boolean, 1 stands for masked pixel
+        :return: 2d array of boolean, 1 stands for masked pixel
         '''
         mask = np.random.rand(self.ydimension, self.xdimension) < undersamplerate
         return mask
         
     def flipImage(self, pic):
-        '''flip image if configured in config
+        '''
+        flip image if configured in config
         
-        param pic: 2d array, image array
+        :param pic: 2d array, image array
         
-        return: 2d array, flipped image array
+        :return: 2d array, flipped image array
         '''
         if self.fliphorizontal:
             pic = pic[:,::-1]
@@ -210,15 +218,16 @@ class Mask(object):
         return pic
     
     def saveMask(self, filename, pic=None, addmask=None):
-        '''generate a mask according to the addmask and pic. save it to .npy. 1 stands for masked pixel
+        '''
+        generate a mask according to the addmask and pic. save it to .npy. 1 stands for masked pixel
         the mask has same order as the pic, which means if the pic is flipped, the mask is fliped
         (when pic is loaded though loadimage, it is flipped)
         
-        param filename: str, filename of mask file to be save
-        param pic: 2d array, image array
-        param addmask: list of str, control which mask to generate
+        :param filename: str, filename of mask file to be save
+        :param pic: 2d array, image array
+        :param addmask: list of str, control which mask to generate
         
-        return: 2d array of boolean, 1 stands for masked pixel
+        :return: 2d array of boolean, 1 stands for masked pixel
         '''
         if not hasattr(self, 'mask'):
             self.normalMask(addmask)

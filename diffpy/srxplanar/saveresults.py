@@ -19,7 +19,8 @@ import os
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
 class SaveResults(object):
-    '''save results into files
+    '''
+    save results into files
     '''
     integrationspace = _configPropertyR('integrationspace')
     savedirectory = _configPropertyR('savedirectory')
@@ -37,11 +38,12 @@ class SaveResults(object):
         return
 
     def getFilePathWithoutExt(self, filename):
-        '''get the normalized full path of filename with out extension
+        '''
+        get the normalized full path of filename with out extension
         
-        param filename: string, could be full path or file name only and with/without ext, only the base part of filename is used.
+        :param filename: string, could be full path or file name only and with/without ext, only the base part of filename is used.
         
-        return: string, full normalized path of file without extension
+        :return: string, full normalized path of file without extension
         '''
         filebase = os.path.splitext(os.path.split(filename)[1])[0]
         if self.filenameplus!='' and self.filenameplus!=None:
@@ -52,9 +54,10 @@ class SaveResults(object):
         return filepathwithoutext
         
     def save(self, rv):
-        '''save diffraction intensity in .chi and gsas format(optional)
+        '''
+        save diffraction intensity in .chi and gsas format(optional)
         
-        param rv: dict, result include integrated diffration intensity
+        :param rv: dict, result include integrated diffration intensity
             the rv['chi'] should be a 2d array with shape (2,len of intensity) or (3, len of intensity)
             file name is generated according to orginal file name and savedirectory
         '''
@@ -65,10 +68,11 @@ class SaveResults(object):
         return
     
     def saveChi(self, xrd, filename):
-        '''save diffraction intensity in .chi
+        '''
+        save diffraction intensity in .chi
         
-        param xrd: 2d array with shape (2,len of intensity) or (3, len of intensity), [tthorq, intensity, (unceratinty)]
-        param filename: str, base file name 
+        :param xrd: 2d array with shape (2,len of intensity) or (3, len of intensity), [tthorq, intensity, (unceratinty)]
+        :param filename: str, base file name 
         '''
         filepath = self.getFilePathWithoutExt(filename) + '.chi'
         f = open(filepath, 'wb')
@@ -78,10 +82,11 @@ class SaveResults(object):
         return
     
     def saveGSAS(self, xrd, filename):
-        '''save diffraction intensity in gsas format
+        '''
+        save diffraction intensity in gsas format
         
-        param xrd: 2d array with shape (2,len of intensity) or (3, len of intensity), [tthorq, intensity, (unceratinty)]
-        param filename: str, base file name
+        :param xrd: 2d array with shape (2,len of intensity) or (3, len of intensity), [tthorq, intensity, (unceratinty)]
+        :param filename: str, base file name
         '''
         filepath = self.getFilePathWithoutExt(filename) + '.gsas'
         f = open(filepath,'wb')
@@ -95,13 +100,14 @@ class SaveResults(object):
         return
   
 def writeGSASStr(name, mode, tth, iobs, esd=None):
-    """Return string of integrated intensities in GSAS format.
-    param mode: string, gsas file type, could be 'std', 'esd', 'fxye' (gsas format)
-    param tth: ndarray, two theta angle
-    param iobs: ndarray, Xrd intensity
-    param esd: ndarray, optional error value of intensity
+    """
+    Return string of integrated intensities in GSAS format.
+    :param mode: string, gsas file type, could be 'std', 'esd', 'fxye' (gsas format)
+    :param tth: ndarray, two theta angle
+    :param iobs: ndarray, Xrd intensity
+    :param esd: ndarray, optional error value of intensity
     
-    return:  string, a string to be saved to file
+    :return:  string, a string to be saved to file
     """
     maxintensity = 999999
     logscale = numpy.floor(numpy.log10(maxintensity / numpy.max(iobs)))

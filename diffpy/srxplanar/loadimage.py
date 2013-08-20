@@ -19,7 +19,8 @@ import os,fnmatch, sys
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
 class LoadImage(object):
-    '''provide methods to filter files and load images 
+    '''
+    provide methods to filter files and load images 
     '''
     # define configuration properties that are forwarded to self.config
     xdimension = _configPropertyR('xdimension')
@@ -38,6 +39,9 @@ class LoadImage(object):
         return
 
     def prepareCalculation(self):
+        '''
+        prepare the calculation
+        '''
         if (self.backgroundfile != '') and (os.path.exists(self.backgroundfile)):
             temp = fabio.openimage.openimage(self.backgroundfile)
             self.backgroundpic = self.flipImage(temp.data)
@@ -47,11 +51,12 @@ class LoadImage(object):
         return
         
     def flipImage(self, pic):
-        '''flip image if configured in config
+        '''
+        flip image if configured in config
         
-        param pic: 2d array, image array
+        :param pic: 2d array, image array
         
-        return: 2d array, flipped image array
+        :return: 2d array, flipped image array
         '''
         if self.fliphorizontal:
             pic = pic[:,::-1]
@@ -60,11 +65,12 @@ class LoadImage(object):
         return pic
     
     def loadImage(self, filename):
-        '''load image, then subtract the background if configed in self.backgroundpic.
+        '''
+        load image, then subtract the background if configed in self.backgroundpic.
         
-        param filename: str, image file name
+        :param filename: str, image file name
         
-        return: 2d ndarray, 2d image array (flipped)
+        :return: 2d ndarray, 2d image array (flipped)
         '''
         if os.path.exists(filename):
             filenamefull = filename
@@ -78,16 +84,17 @@ class LoadImage(object):
         return image
     
     def genFileList(self, filenames=None, opendir=None, includepattern=None, excludepattern=None):
-        '''generate the list of file in opendir according to include/exclude pattern
+        '''
+        generate the list of file in opendir according to include/exclude pattern
         
-        param filenames: list of str, list of file name patterns, all files match ANY pattern in this list will be included
-        param opendir: str, the directory to get files
-        param includepattern: list of str, list of wildcard of files that will be loaded, 
+        :param filenames: list of str, list of file name patterns, all files match ANY pattern in this list will be included
+        :param opendir: str, the directory to get files
+        :param includepattern: list of str, list of wildcard of files that will be loaded, 
             all files match ALL patterns in this list will be included  
-        param excludepattern: list of str, list of wildcard of files that will be blocked,
+        :param excludepattern: list of str, list of wildcard of files that will be blocked,
             any files match ANY patterns in this list will be blocked
         
-        return: list of str, a list of filenames (not include their full path)
+        :return: list of str, a list of filenames (not include their full path)
         '''
         filenames = self.filenames if filenames == None else filenames
         opendir = self.tifdirectory if opendir == None else opendir
@@ -98,16 +105,17 @@ class LoadImage(object):
         return sorted(list(fileset))
     
     def genFileSet(self, filenames=None, opendir=None, includepattern=None, excludepattern=None):
-        '''generate the list of file in opendir according to include/exclude pattern
+        '''
+        generate the list of file in opendir according to include/exclude pattern
         
-        param filenames: list of str, list of file name patterns, all files match ANY pattern in this list will be included
-        param opendir: str, the directory to get files
-        param includepattern: list of str, list of wildcard of files that will be loaded, 
+        :param filenames: list of str, list of file name patterns, all files match ANY pattern in this list will be included
+        :param opendir: str, the directory to get files
+        :param includepattern: list of str, list of wildcard of files that will be loaded, 
             all files match ALL patterns in this list will be included  
-        param excludepattern: list of str, list of wildcard of files that will be blocked,
+        :param excludepattern: list of str, list of wildcard of files that will be blocked,
             any files match ANY patterns in this list will be blocked
         
-        return: set of str, a list of filenames (not include their full path)
+        :return: set of str, a list of filenames (not include their full path)
         '''
         filenames = self.filenames if filenames == None else filenames
         opendir = self.tifdirectory if opendir == None else opendir
