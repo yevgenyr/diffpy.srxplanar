@@ -10,15 +10,14 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-
+   
+   intro
+   install
+   api
 
 
 Indices and tables
 ==================
-
-.. automodule:: diffpy.srxplanar.srxplanar
-    :members:
-    :private-members:
 
 * :ref:`genindex`
 * :ref:`modindex`

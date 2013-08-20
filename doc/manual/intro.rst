@@ -10,7 +10,7 @@ uncertainty of raw counts and integrated intensity.
 License notice
 ------------------------------------------------------------------------
 
-.. include:: ../../LICENSENOTICE.txt
+.. include:: ../../LICENSE.txt
 
 
 .. index:: authors

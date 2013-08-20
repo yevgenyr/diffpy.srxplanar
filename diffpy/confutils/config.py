@@ -36,31 +36,39 @@ from diffpy.confutils.tools import _configPropertyRad, _configPropertyR,\
         _configPropertyRW, str2bool
 
 class ConfigBase(object):
-    '''
-    _optdatalistpre, _optdatalist, _optdatalistext are metadata used to
+    '''_optdatalistpre, _optdatalist, _optdatalistext are metadata used to
     initialize the options, see below for examples
     
     options presents in --help (in cmd)/config file/headers have same order as
     in these three list, so arrange them in right order here.
     
     optional args to control if the options presents in args, config file or
-    file header:
-        'args': default is 'a'
-            if 'a', this option will be available in self.args
-            if 'n', this option will not be available in self.args
-        'config': default is 'a'
-            if 'f', this option will present in self.config and be written to
-            config file only in full mode 
-            if 'a', this option will present in self.config and be written to
-            config file both in full and short mode
-            if 'n', this option will not present in self.config
-        'header', default is 'a'
-            if 'f', this option will be written to header only in full mode
-            if 'a', this option will be written to header both in full and short
-            mode
-            if 'n', this option will not be written to header
-        so in short mode, all options with 'a' will be written, in full mode,
-        all options with 'a' or 'f' will be written
+    file header
+    
+    'args' - default is 'a'
+        if 'a', this option will be available in self.args
+        if 'n', this option will not be available in self.args
+    'config' - default is 'a'
+        if 'f', this option will present in self.config and be written to
+        config file only in full mode 
+        if 'a', this option will present in self.config and be written to
+        config file both in full and short mode
+        if 'n', this option will not present in self.config
+    'header' - default is 'a'
+        if 'f', this option will be written to header only in full mode
+        if 'a', this option will be written to header both in full and short
+        mode
+        if 'n', this option will not be written to header
+    
+    so in short mode, all options with 'a' will be written, in full mode,
+    all options with 'a' or 'f' will be written    
+
+    optdata contains these keys:
+    full(f, positional), short(s), help(h), type(t), action(a), nargs(n),
+    default(d), choices(c), required(r), dest, const
+    these args will be passed to argparse, see the documents of argparse for
+    detail information
+    
     '''
     
     # Text to display before the argument help
@@ -72,13 +80,7 @@ class ConfigBase(object):
     '''
     '''
     
-    '''
-    optdata contains these keys:
-    full(f, positional), short(s), help(h), type(t), action(a), nargs(n),
-    default(d), choices(c), required(r), dest, const
-    these args will be passed to argparse, see the documents of argparse for
-    detail information
-    '''
+    
     _optdatanamedic = {'h':'help',
                        't':'type',
                        'a':'action',
@@ -155,12 +157,13 @@ class ConfigBase(object):
     _defaultheaderline = 'Configuration information'
     
     def __init__(self, filename=None, args=None, **kwargs):
-        '''init the class and update the values of options if specified in 
+        '''
+        init the class and update the values of options if specified in 
         filename/args/kwargs
         
-        param filename: str, file name of the config file
-        param args: list of str, args passed from cmd
-        param kwargs: dict, optional kwargs
+        :param filename: str, file name of the config file
+        :param args: list of str, args passed from cmd
+        :param kwargs: dict, optional kwargs
         '''
         self._additionalInit()
         #updata config, first detect if a default config should be load
@@ -171,7 +174,8 @@ class ConfigBase(object):
     
     #example, overload it
     def _additionalInit(self):
-        '''method called in init process, overload it!
+        '''
+        method called in init process, overload it!
         
         this method will be called after all options in self._optdata are
         processed, i.e. all options are created and before reading config from
@@ -184,7 +188,8 @@ class ConfigBase(object):
     
     #example, overload it
     def _additionalPostProcessing(self, **kwargs):
-        '''post processing after parse args or kwargs, this method is called after 
+        '''
+        post processing after parse args or kwargs, this method is called after 
         in self._postPocessing and before creating config file action  
         '''
         #Overload it!
@@ -192,7 +197,8 @@ class ConfigBase(object):
     
     #example, overload it
     def _additionalUpdataSelf(self, **kwargs):
-        '''additional process called in self._updateSelf, this method is called
+        '''
+        additional process called in self._updateSelf, this method is called
         before self._copySelftoConfig(), i.e. before copy options value to
         self.config (config file)
         '''
@@ -201,11 +207,11 @@ class ConfigBase(object):
     ##########################################################################
     
     def _updateSelf(self, optnames=None, **kwargs):
-        '''update the options value, then copy the values in the self.'options' to
+        '''
+        update the options value, then copy the values in the self.'options' to
         self.config 
         
-        param optnames: str or list of str, name of options whose value has been
-        changed, if None, update all options
+        :param optnames: str or list of str, name of options whose value has been changed, if None, update all options
         '''
         #so some check right here
         self._additionalUpdataSelf(**kwargs)
@@ -215,14 +221,15 @@ class ConfigBase(object):
     
     
     def _findDefaultConfigFile(self, filename=None, args=None, **kwargs):
-        '''find default config file, if any config is specified in
+        '''
+        find default config file, if any config is specified in
         filename/args/kwargs then return the filename of config.
         
-        param filename: str, file name of config file
-        param filename: list of str, args passed from cmd
-        param kwargs: optional kwargs
+        :param filename: str, file name of config file
+        :param filename: list of str, args passed from cmd
+        :param kwargs: optional kwargs
         
-        return: name of config file if found, otherwise None 
+        :return: name of config file if found, otherwise None 
         '''
         rv = None
         flag = False
@@ -242,22 +249,24 @@ class ConfigBase(object):
             
     
     def _getTypeStr(self, optname):
-        '''detect the type of option
+        '''
+        detect the type of option
         
-        param optname: str, name of option
+        :param optname: str, name of option
         
-        return: string of type 
+        :return: string of type 
         '''
         opttype =self._getTypeStrC(optname)
         return opttype
     
     @classmethod
     def _getTypeStrC(cls, optname):
-        '''detect the type of option
+        '''
+        detect the type of option
         
-        param optname: str, name of option
+        :param optname: str, name of option
         
-        return: string of type 
+        :return: string of type 
         '''
         optdata = cls._optdata[optname]
         if optdata.has_key('t'):
@@ -286,22 +295,24 @@ class ConfigBase(object):
         return opttype
     
     def _getType(self, optname):
-        '''detect the type of option
+        '''
+        detect the type of option
         
-        param optname: str, name of option
+        :param optname: str, name of option
         
-        return: type of data 
+        :return: type of data 
         '''
         opttype =self._getTypeC(optname)
         return opttype
     
     @classmethod
     def _getTypeC(cls, optname):
-        '''detect the type of option
+        '''
+        detect the type of option
         
-        param optname: str, name of option
+        :param optname: str, name of option
         
-        return: type of data
+        :return: type of data
         '''
         opttype = cls._getTypeStrC(optname)
         if opttype.startswith('str'):
@@ -315,7 +326,8 @@ class ConfigBase(object):
         return rv
     
     def _detectAddSections(self):
-        '''detect sections present in self._optdata and add them to self.config
+        '''
+        detect sections present in self._optdata and add them to self.config
         also add it to self._configlist
         '''
         self._detectAddSectionsC(self)
@@ -323,9 +335,11 @@ class ConfigBase(object):
     
     @classmethod
     def _detectAddSectionsC(cls):
-        '''detect sections present in self._optdata and add them to self.config
+        '''
+        detect sections present in self._optdata and add them to self.config
         also add it to self._configlist
-        param cls: class, class to configurate
+        
+        :param cls: class, class to configurate
         '''
         #seclist = [self._optdata[key]['sec'] for key in self._optdata.keys()]
         seclist = [cls._optdata[opt[0]]['sec'] for opt in cls._optdatalist]
@@ -337,20 +351,22 @@ class ConfigBase(object):
         return
     
     def _addOpt(self, optname):
-        '''add options to self.config and self.args and self.'optname',
+        '''
+        add options to self.config and self.args and self.'optname',
         this will read metadata in self._optdatalist
         
-        param optname: string, name of option
+        :param optname: string, name of option
         '''
         self._addOptC(self, optname)
         return
     
     @classmethod
     def _addOptC(cls, optname):
-        '''add options to self.config and self.args and self.'optname',
+        '''
+        add options to self.config and self.args and self.'optname',
         this will read metadata in self._optdatalist
         
-        param optname: string, name of option
+        :param optname: string, name of option
         '''
         optdata = cls._optdata[optname]
         opttype = cls._getTypeStrC(optname)
@@ -387,10 +403,11 @@ class ConfigBase(object):
         return
     
     def _copyConfigtoSelf(self, optnames=None):
-        '''copy the values in self.config to self.'options'
+        '''
+        copy the values in self.config to self.'options'
         
-        param optname: str or list of str, names of options whose value copied
-        from self.config to self.'optname'. Set None to update all
+        :param optname: str or list of str, names of options whose value copied
+            from self.config to self.'optname'. Set None to update all
         '''
         if not hasattr(self, 'mdict'):
             self.mdict = {
@@ -419,10 +436,11 @@ class ConfigBase(object):
         return
     
     def _copySelftoConfig(self, optnames=None):
-        '''copy the value in self.'options' to self.config
+        '''
+        copy the value in self.'options' to self.config
         
-        param optname: str or list of str, names of options whose value copied
-        from self.'optname' to self.config. Set None to update all
+        :param optname: str or list of str, names of options whose value copied
+            from self.'optname' to self.config. Set None to update all
         '''
         if optnames!=None:
             optnames = optnames if type(optnames)==list else [optnames]
@@ -450,13 +468,14 @@ class ConfigBase(object):
         return
     
     def _getListValue(self, sectionname, optionname, vtype):
-        '''helper function that get a list of value for string read from self.config
+        '''
+        helper function that get a list of value for string read from self.config
         
-        param sectionname: string, name of section in self.config
-        param optionname: string, name of option in self.config
-        vtype: string, type of list, can be strlist, intlist, floatlist, boollist
+        :param sectionname: string, name of section in self.config
+        :param optionname: string, name of option in self.config
+        :param vtype: string, type of list, can be strlist, intlist, floatlist, boollist
         
-        return: list of value in desired format, or [] if options value is empty
+        :return: list of value in desired format, or [] if options value is empty
         ''' 
         temp = re.split('\s*,\s*', self.config.get(sectionname, optionname))
         if len(temp)>0:
@@ -473,9 +492,10 @@ class ConfigBase(object):
         return rv
     
     def parseArgs(self, pargs):
-        '''parse args and update the value in self.'optname', this will call the self.args to parse args,
+        '''
+        parse args and update the value in self.'optname', this will call the self.args to parse args,
         
-        param pargs: list of string, pargs to parse, usually be sys.argv
+        :param pargs: list of string, pargs to parse, usually be sys.argv
         '''
         obj = self.args.parse_args(pargs)
         changedargs = obj.__dict__.keys()
@@ -488,9 +508,10 @@ class ConfigBase(object):
         return obj
     
     def parseKwargs(self, **kwargs):
-        '''update self.'optname' values according to the kwargs
+        '''
+        update self.'optname' values according to the kwargs
         
-        param kwargs: keywords=value
+        :param kwargs: keywords=value
         '''
         if kwargs!={}:
             changedargs = []
@@ -503,9 +524,10 @@ class ConfigBase(object):
         return
 
     def parseConfigFile(self, filename):
-        '''read a config file and update the self.'optname'
+        '''
+        read a config file and update the self.'optname'
         
-        param filename: str, file name of config file
+        :param filename: str, file name of config file
         '''
         if filename!=None:
             if os.path.exists(filename):
@@ -516,18 +538,19 @@ class ConfigBase(object):
         return
     
     def updateConfig(self, filename=None, args=None, **kwargs):
-        '''update config according to config file, args(from sys.argv) or **kwargs
+        '''
+        update config according to config file, args(from sys.argv) or kwargs
         
-        first process file/args/kwargs passed to this method, 
-        then read a configfile if specified in args or kwargs
-        then call self._postProcessing()
-            call self._additionalPostProcessing()
-            then write config file if specified in args/kwargs
+        1. first process file/args/kwargs passed to this method, 
+        2. read a configfile if specified in args or kwargs
+        3. call self._postProcessing()
+        4. call self._additionalPostProcessing()
+        5. write config file if specified in args or kwargs
         
-        param filename: string, name of config file
-        param args: list of str, usually be sys.argv
-        param **kwargs: you can use like 'xbeamcenter=1024' or a dict to update
-        the value of xbeamcenter
+        :param filename: string, name of config file
+        :param args: list of str, usually be sys.argv
+        :param kwargs: you can use like 'xbeamcenter=1024' or a dict to 
+            update the value of xbeamcenter
         '''
         if filename!=None:
             rv = self.parseConfigFile(filename)
@@ -549,10 +572,11 @@ class ConfigBase(object):
         return rv
     
     def writeConfig(self, filename, mode='short'):
-        '''write config to file
+        '''
+        write config to file
         
-        param filename: string, name of file
-        param mode: string, 'short' or 'full' ('s' or 'f'). 
+        :param filename: string, name of file
+        :param mode: string, 'short' or 'full' ('s' or 'f'). 
             'short', options with 'config'=='f' will not be written into config file
             'full', all available options in self.config will be written to config file
         '''
@@ -581,17 +605,18 @@ class ConfigBase(object):
         return
     
     def getHeader(self, title=None, mode='short'):
-        '''get a header of configurations values, 
+        '''
+        get a header of configurations values, 
         
         by default, all options are written to a header, it can be disabled by 
         set 'header' to False in self._optdata
         
-        param title: str, title of header
-        param mode: string, 'short' or 'full' ('s' or 'f'). 
+        :param title: str, title of header
+        :param mode: string, 'short' or 'full' ('s' or 'f'). 
             'short', options with 'config'=='f' will not be written into config file
             'full', all available options in self.config will be written to config file
         
-        return: string, lines that can be directly writen to a text file
+        :return: string, lines that can be directly writen to a text file
         '''
         
         lines = []
@@ -619,11 +644,12 @@ class ConfigBase(object):
         return rv
     
     def _postProcessing(self, **kwargs):
-        '''post processing after parse args or kwargs or config file
+        '''
+        post processing after parse args or kwargs or config file
         this method is called in self.updateConfig, after all file/args/kwargs
         some options are reset to their default to pervent process twice
         
-        param kwargs: keywords=value
+        :param kwargs: keywords=value
         '''
         
         self._additionalPostProcessing(**kwargs)
@@ -638,7 +664,8 @@ class ConfigBase(object):
     
 #IMPORTANT call this function if you want to add options as class attributes!!!
 def initConfigClass(config):
-    '''init config class and add options to class
+    '''
+    init config class and add options to class
     this funtion should be executed to generate options according to metadata defined in class
     '''
     config.config = ConfigParser.ConfigParser(dict_type = OrderedDict)
