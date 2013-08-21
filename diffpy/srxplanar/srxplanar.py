@@ -212,7 +212,7 @@ class SrXplanar(object):
                     image = np.zeros((self.config.ydimension, self.config.xdimension))
                     for imagefile in filelist:
                         image += self.loadimage.loadImage(imagefile)
-                    self.integrate(image, imagefile)
+                    self.integrate(image, imagefile+'_sum', flip=False)
                 else:
                     for imagefile in filelist:
                         self.integrate(imagefile)
