@@ -165,6 +165,54 @@ class SrXplanar(object):
             self.saveresults.save(rv)
         return rv
     
+    def integrateFilelist(self, filelist, summation=None, filename=None):
+        '''
+        process all file in filelist, integrate them separately or together
+        
+        :param filelist: list of string, file list (full path)
+        :param sum: bool, sum all files together or not
+        '''
+        summation =  self.config.summation if summation == None else summation
+        if (summation)and(len(filelist)>1):
+            image = np.zeros((self.config.ydimension, self.config.xdimension))
+            for imagefile in filelist:
+                image += self.loadimage.loadImage(imagefile)
+            filename = imagefile+'_sum' if filename == None else filename
+            self.integrate(image, savename = filename, flip=False)
+        else:
+            i = 0
+            for imagefile in filelist:
+                if filename==None:
+                    self.integrate(imagefile)
+                else:
+                    self.integrate(imagefile, savename = filename+'%03d'%i)
+        return
+    
+    def process(self):
+        '''
+        process the images according to filenames/includepattern/excludepattern/summation
+        by default, it will scan current/tifdirectory and integrate all files match 
+        includepattern/excludepattern and/or filenames.
+        
+        Usually this one is called from cmd line rather then script.
+        
+        :return: None
+        '''
+        #if any configrations is passed to srxplanar
+        if self.config.initanything:
+            if not self.config.nocalculation:
+                filelist = self.loadimage.genFileList()
+                self.integrateFilelist(filelist)
+            #mask creating
+            elif self.config.createmask!='':
+                self.createMask()
+        #if no config is passed to srxplanar
+        else:
+            print 'No input files or configurations'
+            self.config.args.print_help()
+        return
+    
+    
     def createMask(self, filename= None, pic=None, addmask=None):
         '''
         create and save a mask according to addmask, pic, 1 stands for masked pixel in saved file
@@ -194,36 +242,6 @@ class SrXplanar(object):
         rv = self.mask.saveMask(filename, pic, addmask)
         return rv
     
-    def process(self):
-        '''
-        process the images according to filenames/includepattern/excludepattern/summation
-        by default, it will scan current/tifdirectory and integrate all files match 
-        includepattern/excludepattern and/or filenames.
-        
-        Usually this one is called from cmd line rather then script.
-        
-        :return: None
-        '''
-        #if any configrations is passed to srxplanar
-        if self.config.initanything:
-            if not self.config.nocalculation:
-                filelist = self.loadimage.genFileList()
-                if (self.config.summation)and(len(filelist)>1):
-                    image = np.zeros((self.config.ydimension, self.config.xdimension))
-                    for imagefile in filelist:
-                        image += self.loadimage.loadImage(imagefile)
-                    self.integrate(image, imagefile+'_sum', flip=False)
-                else:
-                    for imagefile in filelist:
-                        self.integrate(imagefile)
-            #mask creating
-            elif self.config.createmask!='':
-                self.createMask()
-        #if no config is passed to srxplanar
-        else:
-            print 'No input files or configurations'
-            self.config.args.print_help()
-        return
 
 
 def main():
