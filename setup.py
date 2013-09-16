@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 # define distribution
 dist = setup(
         name = 'diffpy.srxplanar',
-        version = '0.2',
+        version = '1.0',
         namespace_packages = ['diffpy'],
         packages = find_packages(),
         entry_points = {

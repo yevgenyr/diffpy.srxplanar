@@ -55,14 +55,12 @@ installation process.  The easiest way to check is to start the
 :program:`Command Prompt`, type there ``python`` and see if this
 starts the Python interpreter.
 
-.. index:: PDFgetX3 installation
+.. index:: SrXplanar installation
 
-PDFgetX3 installation
+SrXplanar installation
 ------------------------------------------------------------------------
 
-FIXME: update the URL
-
-To install the diffpy.SrXplanar package:
+To install the diffpy.srxplanar package:
 
     python setup.py install
 
@@ -76,10 +74,10 @@ The Python setuptools library provides "easy_install" script, which can
 be used to update diffpy.Structure installation or even to perform a new
 install without explicit need to download and unzip the code:
 
-    easy_install -U diffpy.SrXplanar
+    easy_install -U diffpy.srxplanar
 
 This checks the package repository at http://www.diffpy.org/packages/
-for any newer releases of diffpy.Structure and if present, it updates the
+for any newer releases of diffpy.srxplanar and if present, it updates the
 installation.  The easy_install can be also used to get in sync with the
 latest development sources in the subversion repository:
 
