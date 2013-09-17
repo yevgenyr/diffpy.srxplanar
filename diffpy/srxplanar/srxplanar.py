@@ -145,7 +145,7 @@ class SrXplanar(object):
             name of file to save to disk
         '''
         rv = {}
-        if type(image)==str:
+        if isinstance(image, (str, unicode)):
             self.pic = self.loadimage.loadImage(image)
         elif flip:
             self.pic = self.loadimage.flipImage(image)
@@ -177,7 +177,7 @@ class SrXplanar(object):
             image = np.zeros((self.config.ydimension, self.config.xdimension))
             for imagefile in filelist:
                 image += self.loadimage.loadImage(imagefile)
-            filename = imagefile+'_sum' if filename == None else filename
+            filename = os.path.splitext(imagefile)[0]+'_sum.chi' if filename == None else filename
             self.integrate(image, savename = filename, flip=False)
         else:
             i = 0
