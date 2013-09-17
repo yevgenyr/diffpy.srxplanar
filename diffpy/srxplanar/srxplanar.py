@@ -123,7 +123,7 @@ class SrXplanar(object):
             rv = self.config.output
         elif filename!=None:
             rv = filename
-        elif imagename!=None and type(imagename)==str:
+        elif imagename!=None and isinstance(imagename, (str, unicode)):
             rv = imagename
         return rv
     
