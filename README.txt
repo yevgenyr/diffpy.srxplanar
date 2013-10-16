@@ -42,7 +42,7 @@ The Python setuptools library provides "easy_install" script, which can
 be used to update diffpy.Structure installation or even to perform a new
 install without explicit need to download and unzip the code:
 
-    easy_install -U diffpy.SrXplanar
+    easy_install -U diffpy.srxplanar
 
 This checks the package repository at http://www.diffpy.org/packages/
 for any newer releases of diffpy.Structure and if present, it updates the
