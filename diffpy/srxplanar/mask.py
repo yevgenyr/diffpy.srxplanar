@@ -39,13 +39,8 @@ class Mask(object):
     
     def __init__(self, p):
         self.config = p
-        self.prepareCalculation()
         return
     
-    def prepareCalculation(self):
-        self.xydimension = self.xdimension * self.ydimension
-        return
-
     def staticMask(self, addmask = None):
         '''
         create a static mask according existing mask file. This mask remain unchanged for different images

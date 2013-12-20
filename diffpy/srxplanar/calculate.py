@@ -48,7 +48,6 @@ class Calculate(object):
     sacorrectionenable = _configPropertyR('sacorrectionenable')
     polcorrectionenable = _configPropertyR('polcorrectionenable')
     polcorrectf = _configPropertyR('polcorrectf')
-    selfcorrenable = _configPropertyR('selfcorrenable')
 
 
     def __init__(self, p):
@@ -67,41 +66,44 @@ class Calculate(object):
         self.dmatrix = self.genDistanceMatrix()
         self.azimuthmatrix = np.arctan2(self.yr.reshape(self.ydimension,1), 
                                         self.xr.reshape(1,self.xdimension))
+        self.genTTHorQMatrix()
+        return
+    
+    def genTTHorQMatrix(self):
         #set tth or q grid
         if self.integrationspace == 'twotheta':
-            self.tthorq = self.tth = np.arange(0.0, self.tthmax, self.tthstep)
-            self.tthorqoutput = np.arange(0.0, self.tthmaxd, self.tthstepd)
+            self.bin_edges = np.r_[0, np.arange(self.tthstep/2, self.tthmax, self.tthstep)]
+            self.xgrid = np.degrees(self.bin_edges[1:] - self.tthstep/2)
             self.tthorqmatrix = self.genTTHMatrix()
         elif self.integrationspace == 'qspace':
-            self.tthorq = self.q = np.arange(0.0, self.qmax, self.qstep)
-            self.tthorqoutput = self.tthorq
+            self.bin_edges = np.r_[0, np.arange(self.qstep/2, self.qmax, self.qstep)]
+            self.xgrid = self.bin_edges[1:] - self.qstep/2
             self.tthorqmatrix = self.genQMatrix()
         return
     
     def genIntegrationInds(self, mask=None):
         '''
         generate index used in integration
-        picflat[ind[indlow[i]]:ind[indhigh[i]]] belong to one tth or q bin
         
         :param mask: mask 2D array, same dimension as image, 1 for masked pixel
         
-        :return: self.ind, self.indlow, self.indhigh: see usage before
+        :return: self.ind
         '''
+        tthorqmatrix = np.array(self.tthorqmatrix)
         if mask == None:
-            mask = np.zeros((self.ydimension, self.xdimension), dtype=boolean)
-        tthorqmatrix = self.tthorqmatrix
+            mask = np.zeros((self.ydimension, self.xdimension), dtype=bool)
         tthorqmatrix[mask] = 1000.0
-        tthorqmatrix = np.rint(tthorqmatrix / self.tthorqstep).astype(int)
-        tthorqflat = tthorqmatrix.ravel()
+        tthorqmatrix = tthorqmatrix.ravel()
         
-        self.ind = np.argsort(tthorqflat)
-        self.sortedtthorqindflat = tthorqflat[self.ind]
-        sind = np.nonzero(np.diff(self.sortedtthorqindflat))[0] + 1
-        self.indlow = np.concatenate([[0], sind])
-        self.indhigh = np.concatenate([sind, [self.xdimension*self.ydimension]])
-        return self.ind, self.indlow, self.indhigh
+        self.ind = np.argsort(tthorqmatrix)
+        sa = tthorqmatrix[self.ind] 
+        self.bin_index = np.r_[sa.searchsorted(self.bin_edges[:-1], 'left'), \
+                sa.searchsorted(self.bin_edges[-1], 'right')]
+        self.bin_number = np.diff(self.bin_index)
+        self.bin_number[self.bin_number<=0] = 1
+        return self.ind, self.bin_index
     
-    def intensity(self, pic, picvar=None):
+    def intensity(self, pic):
         '''
         2D to 1D image integration, intensity of pixels are binned and then take average,
         if self.selfcorrenable is True, then pixels whose intensity are too high/low will be dropped.
@@ -114,50 +116,31 @@ class Calculate(object):
         
         :retrun: 2d array, [tthorq, intensity, unceratinty] or [tthorq, intensity]
         '''
-        import matplotlib.pyplot as plt 
         
-        ind = self.ind
-        indlow = self.indlow
-        indhigh = self.indhigh
+        intensity = self.calculateIntensity(pic)
         if self.uncertaintyenable:
-            picflat = pic.ravel()[ind]
-            picvarflat = picvar.ravel()[ind] if picvar!=None else np.zeros_like(picflat)
-            intensity = np.zeros_like(self.tthorqoutput)
-            std = np.zeros_like(self.tthorqoutput)
-            leng = len(intensity)
-            for i in xrange(len(indlow)):
-                dataind = self.sortedtthorqindflat[indlow[i]]
-                if dataind<leng:
-                    data = picflat[indlow[i]:indhigh[i]]
-                    datavar = picvarflat[indlow[i]:indhigh[i]]
-                    if self.selfcorrenable:
-                        medianint = np.median(data)
-                        ind1 = np.logical_and(medianint*0.5<data, data<medianint*2)
-                        data = data[ind1]
-                        datavar = datavar[ind1]
-                    intensity[dataind] = np.mean(data)
-                    std[dataind] = np.sqrt(np.mean(datavar)/len(datavar))
-            rv = np.vstack([self.tthorqoutput, intensity, std])
-            rv[np.isnan(rv)] = 0
+            std = np.sqrt(self.calculateVariance(pic))
+            rv = np.vstack([self.xgrid, intensity, std])
         else:
-            picflat = pic.ravel()[ind]
-            intensity = np.zeros_like(self.tthorqoutput)
-            std = np.zeros_like(self.tthorqoutput)
-            leng = len(intensity)
-            for i in xrange(len(indlow)):
-                dataind = self.sortedtthorqindflat[indlow[i]]
-                if dataind<leng:
-                    data = picflat[indlow[i]:indhigh[i]]
-                    if self.selfcorrenable:
-                        medianint = np.median(data)
-                        ind1 = np.logical_and(medianint*0.5<data, data<medianint*2)
-                        data = data[ind1]
-                    intensity[dataind] = np.mean(data)
-            rv = np.vstack([self.tthorqoutput, intensity])
-            rv[np.isnan(rv)] = 0    
+            rv = np.vstack([self.xgrid, intensity])
         return rv
+
+    def calculateIntensity(self, pic):
+        spic = pic.ravel()[self.ind]
+        cw = np.concatenate(([0,], spic.cumsum()))
+        intensity = cw[self.bin_index]
+        intensity = np.diff(intensity)/self.bin_number
+        return intensity
     
-    def varianceLocal(self, pic):
+    def calculateVariance(self, pic):
+        picvar = self.calculateVarianceLocal(pic)
+        svar = picvar.ravel()[self.ind]
+        cw1 = np.concatenate(([0,], svar.cumsum()))
+        variance = cw1[self.bin_index]
+        variance = np.diff(variance)/self.bin_number
+        return variance
+    
+    def calculateVarianceLocal(self, pic):
         '''
         calculate the variance of raw counts of each pixel are calculated according to their 
         loacl variance.
@@ -184,8 +167,8 @@ class Calculate(object):
         
         :return: 2d array, distance between source and each pixel
         '''
-        sinr = np.sin(self.rotation)
-        cosr = np.cos(self.rotation)
+        sinr = np.sin(-self.rotation)
+        cosr = np.cos(-self.rotation)
         sint = np.sin(self.tilt)
         cost = np.cos(self.tilt)
         sourcexr = -self.distance * sint * cosr
@@ -206,8 +189,8 @@ class Calculate(object):
         :return: 2d array, two theta angle of each pixel's center
         '''
     
-        sinr = np.sin(self.rotation)
-        cosr = np.cos(self.rotation)
+        sinr = np.sin(-self.rotation)
+        cosr = np.cos(-self.rotation)
         sint = np.sin(self.tilt)
         cost = np.cos(self.tilt)
         sourcexr = -self.distance * sint * cosr
@@ -227,8 +210,8 @@ class Calculate(object):
         
         :return: 2d array, q value of each pixel's center
         '''
-        sinr = np.sin(self.rotation)
-        cosr = np.cos(self.rotation)
+        sinr = np.sin(-self.rotation)
+        cosr = np.cos(-self.rotation)
         sint = np.sin(self.tilt)
         cost = np.cos(self.tilt)
         sourcexr = -self.distance * sint * cosr

@@ -3,7 +3,7 @@
 #
 # diffpy.confutils  by DANSE Diffraction group
 #                   Simon J. L. Billinge
-#                   (c) 2010 Trustees of the Columbia University
+#                   (c) 2013 Trustees of the Columbia University
 #                   in the City of New York.  All rights reserved.
 #
 # File coded by:    Xiaohao Yang
@@ -24,12 +24,11 @@ import re, os, sys, fnmatch
 from functools import partial
 import argparse
 
-from diffpy.confutils.config import ConfigBase, initConfigClass
+from diffpy.confutils.config import ConfigBase
 from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, _configPropertyRW
 
 ##############################################################################
 
-initConfigClass(ConfigBase)
 
 class TestConfig(unittest.TestCase):
     testconfigdata = '''

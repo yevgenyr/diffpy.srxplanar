@@ -3,7 +3,7 @@
 #
 # diffpy.confutils  by DANSE Diffraction group
 #                   Simon J. L. Billinge
-#                   (c) 2010 Trustees of the Columbia University
+#                   (c) 2012 Trustees of the Columbia University
 #                   in the City of New York.  All rights reserved.
 #
 # File coded by:    Xiaohao Yang
@@ -22,25 +22,28 @@ Note: for python 2.6, argparse and orderedDict is required, install them with
 easy_install
 '''
 
-import numpy as np
+
 import ConfigParser
-import re, os, sys
+import re
+import os
+import sys
 from functools import partial
 import argparse
-if sys.version_info < (2,7):
-    from ordereddict import OrderedDict
-else:
+try:
     from collections import OrderedDict
+except:
+    from ordereddict import OrderedDict
 
-from diffpy.confutils.tools import _configPropertyRad, _configPropertyR,\
-        _configPropertyRW, str2bool
+from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, \
+    _configPropertyRW, str2bool, opt2Str, str2Opt, StrConv, FackConfigFile
 
 class ConfigBase(object):
-    '''_optdatalistpre, _optdatalist, _optdatalistext are metadata used to
+    '''
+    _optdatalist_default, _optdatalist are metadata used to
     initialize the options, see below for examples
     
-    options presents in --help (in cmd)/config file/headers have same order as
-    in these three list, so arrange them in right order here.
+    options presents in --help (in cmd), config file, headers have same order as
+    in these list, so arrange them in right order here.
     
     optional args to control if the options presents in args, config file or
     file header
@@ -59,16 +62,9 @@ class ConfigBase(object):
         if 'a', this option will be written to header both in full and short
         mode
         if 'n', this option will not be written to header
-    
+        
     so in short mode, all options with 'a' will be written, in full mode,
-    all options with 'a' or 'f' will be written    
-
-    optdata contains these keys:
-    full(f, positional), short(s), help(h), type(t), action(a), nargs(n),
-    default(d), choices(c), required(r), dest, const
-    these args will be passed to argparse, see the documents of argparse for
-    detail information
-    
+    all options with 'a' or 'f' will be written
     '''
     
     # Text to display before the argument help
@@ -80,8 +76,24 @@ class ConfigBase(object):
     '''
     '''
     
+    '''
+    optdata contains these keys:
+    these args will be passed to argparse, see the documents of argparse for
+    detail information
     
-    _optdatanamedic = {'h':'help',
+    'f': full, (positional)
+    's': short
+    'h': help
+    't': type
+    'a': action
+    'n': nargs
+    'd': default
+    'c': choices
+    'r': required
+    'de': dest
+    'co': const
+    '''
+    _optdatanamedict = {'h':'help',
                        't':'type',
                        'a':'action',
                        'n':'nargs',
@@ -92,10 +104,8 @@ class ConfigBase(object):
                        'co':'const'}
     
     #examples, overload it
-    _optdatalistpre = []
-    
-    _optdatalist = [
-        ['configfile',{'sec':'Control', 'config':'n', 'header':'n',
+    _optdatalist_default = [
+        ['configfile',{'sec':'Control', 'config':'f', 'header':'n',
             's':'c',
             'h':'name of input config file',
             'd':'',}],
@@ -107,7 +117,7 @@ class ConfigBase(object):
             'd':'',}],
         ]
     #examples, overload it
-    _optdatalistext = [
+    _optdatalist = [
         ['tifdirectory',{'sec':'Experiment', 'header':'n',
             's':'tifdir',
             'h':'directory of raw tif files',
@@ -150,80 +160,58 @@ class ConfigBase(object):
             'd':[1,1,1,1,50],}],
         ]
     
-    #default config file path and name, overload it for your config class
-    _defaultconfigpath = ['config.cfg']
+    # some default data
+    # configfile: default config file name
+    # headertitle: default title of header
+    _defaultdata = {'configfile': ['config.cfg'],
+                    'headertitle': 'Configuration information' 
+                    }
     
-    #default first list displayed in header
-    _defaultheaderline = 'Configuration information'
-    
+
     def __init__(self, filename=None, args=None, **kwargs):
         '''
         init the class and update the values of options if specified in 
         filename/args/kwargs
         
+        it will:
+            1. call self._preInit method
+            2. find the config file if specified in filename/args/kwargs
+                if failed, try to find default config file
+            3. update the options value using filename/args/kwargs
+                file > args > kwargs
+        
         :param filename: str, file name of the config file
         :param args: list of str, args passed from cmd
         :param kwargs: dict, optional kwargs
+        
+        :return: None
         '''
-        self._additionalInit()
-        #updata config, first detect if a default config should be load
+        #call self._preInit
+        self._preInit(**kwargs)
+        
+        #update config, first detect if a default config should be load
         filename = self._findDefaultConfigFile(filename, args, **kwargs)
-        self.updateConfig(filename, args, **kwargs)
-        self.initanything = filename or args or (kwargs!={})
+        rv = self.updateConfig(filename, args, **kwargs)
         return
     
     #example, overload it
-    def _additionalInit(self):
+    def _preInit(self, **kwargs):
         '''
         method called in init process, overload it!
         
-        this method will be called after all options in self._optdata are
-        processed, i.e. all options are created and before reading config from
-        file/args/kwargs
+        this method will be called before reading config from file/args/kwargs
         '''
-        for name in ['rotation']:
-            setattr(self.__class__, name, _configPropertyRad(name+'d'))
-        self._configlist['Experiment'].extend(['rotation'])
+        #for name in ['rotation']:
+        #    setattr(self.__class__, name, _configPropertyRad(name+'d'))
+        #self._configlist['Experiment'].extend(['rotation'])
         return
     
-    #example, overload it
-    def _additionalPostProcessing(self, **kwargs):
-        '''
-        post processing after parse args or kwargs, this method is called after 
-        in self._postPocessing and before creating config file action  
-        '''
-        #Overload it!
-        return
+    ###########################################################################
     
-    #example, overload it
-    def _additionalUpdataSelf(self, **kwargs):
+    def _findConfigFile(self, filename=None, args=None, **kwargs):
         '''
-        additional process called in self._updateSelf, this method is called
-        before self._copySelftoConfig(), i.e. before copy options value to
-        self.config (config file)
-        '''
-        return
-    
-    ##########################################################################
-    
-    def _updateSelf(self, optnames=None, **kwargs):
-        '''
-        update the options value, then copy the values in the self.'options' to
-        self.config 
-        
-        :param optnames: str or list of str, name of options whose value has been changed, if None, update all options
-        '''
-        #so some check right here
-        self._additionalUpdataSelf(**kwargs)
-        #copy value to self.config
-        self._copySelftoConfig(optnames)
-        return
-    
-    
-    def _findDefaultConfigFile(self, filename=None, args=None, **kwargs):
-        '''
-        find default config file, if any config is specified in
-        filename/args/kwargs then return the filename of config.
+        find config file, if any config is specified in filename/args/kwargs
+        then return the filename of config. 
         
         :param filename: str, file name of config file
         :param filename: list of str, args passed from cmd
@@ -232,29 +220,85 @@ class ConfigBase(object):
         :return: name of config file if found, otherwise None 
         '''
         rv = None
-        flag = False
         if (filename!=None):
-            flag == True
             rv = filename
         if (args!=None):
             if ('--configfile' in args) or ('-c' in args):
-                flag = True
+                obj = self.args.parse_args(pargs)
+                rv = obj.configfile
         if kwargs.has_key('configfile'):
-                flag = True
-        if not flag:
-            for dconf in self._defaultconfigpath:
-                if (os.path.exists(dconf))and(rv==None):
+            rv = kwargs['configfile']
+        return rv
+    
+    def _findDefaultConfigFile(self, filename=None, args=None, **kwargs):
+        '''
+        find default config file, if any config is specified in
+        filename/args/kwargs or in self._defaultdata['configfile'], then return
+        the filename of config.
+        
+        kwargs > args > filename > default
+        
+        param filename: str, file name of config file
+        param filename: list of str, args passed from cmd
+        param kwargs: optional kwargs
+        
+        return: name of config file if found, otherwise None 
+        '''
+        rv = self._findConfigFile(filename, args, **kwargs)
+        if rv == None:
+            for dconf in self._defaultdata['configfile']:
+                if (os.path.exists(dconf))and(rv == None):
                     rv = dconf
         return rv
-            
+    
+    ###########################################################################
+        
+    def _updateSelf(self, optnames=None, **kwargs):
+        '''
+        update the options value, then copy the values in the self.'options' to
+        self.config
+        
+        1. call self._preUpdateSelf
+        2. apply options' value from *self.option* to self.config
+        3. call self._postUpdateSelf
+        
+        :param optnames: str or list of str, name of options whose value has
+        been changed, if None, update all options
+        '''
+        #so some check right here
+        self._preUpdateSelf(**kwargs)
+        #copy value to self.config
+        self._copySelftoConfig(optnames)
+        #so some check right here
+        self._postUpdateSelf(**kwargs)
+        return
+    
+    #example, overload it
+    def _preUpdateSelf(self, **kwargs):
+        '''
+        additional process called in self._updateSelf, this method is called
+        before self._copySelftoConfig(), i.e. before copy options value to
+        self.config (config file)
+        '''
+        return
+    
+    def _postUpdateSelf(self, **kwargs):
+        '''
+        additional process called in self._updateSelf, this method is called
+        after self._copySelftoConfig(), i.e. before copy options value to
+        self.config (config file)
+        '''
+        return
+    
+    ###########################################################################
     
     def _getTypeStr(self, optname):
         '''
-        detect the type of option
+        return the type of option
         
         :param optname: str, name of option
         
-        :return: string of type 
+        :return: string, type of the option 
         '''
         opttype =self._getTypeStrC(optname)
         return opttype
@@ -262,68 +306,42 @@ class ConfigBase(object):
     @classmethod
     def _getTypeStrC(cls, optname):
         '''
-        detect the type of option
+        class method, return the type of option
+        first try to get type information from metadata, if failed, try
+        to get type from default value 
         
         :param optname: str, name of option
         
-        :return: string of type 
+        :return: string, type of the option 
         '''
         optdata = cls._optdata[optname]
         if optdata.has_key('t'):
             opttype = optdata['t']
         else:
             value = optdata['d']
-            if type(value)==str:
+            if isinstance(value, str):
                 opttype = 'str'
-            elif type(value)==float:
-                opttype = 'float'
-            elif type(value)==int:
-                opttype = 'int'
-            elif type(value)==bool:
+            elif isinstance(value, bool):
                 opttype = 'bool'
-            elif type(value)==list:
+            elif isinstance(value, float):
+                opttype = 'float'
+            elif isinstance(value, int):
+                opttype = 'int'
+            elif isinstance(value, list):
                 if len(value)==0:
                     opttype = 'strlist'
-                elif type(value[0])==str:
+                elif isinstance(value[0], str):
                     opttype = 'strlist'
-                elif type(value[0])==float:
-                    opttype = 'floatlist'
-                elif type(value[0])==int:
-                    opttype = 'intlist'
-                elif type(value[0])==bool:
+                elif isinstance(value[0], bool):
                     opttype = 'boollist'
+                elif isinstance(value[0], float):
+                    opttype = 'floatlist'
+                elif isinstance(value[0], int):
+                    opttype = 'intlist'
+                
         return opttype
     
-    def _getType(self, optname):
-        '''
-        detect the type of option
-        
-        :param optname: str, name of option
-        
-        :return: type of data 
-        '''
-        opttype =self._getTypeC(optname)
-        return opttype
-    
-    @classmethod
-    def _getTypeC(cls, optname):
-        '''
-        detect the type of option
-        
-        :param optname: str, name of option
-        
-        :return: type of data
-        '''
-        opttype = cls._getTypeStrC(optname)
-        if opttype.startswith('str'):
-           rv = str
-        elif opttype.startswith('float'):
-           rv = float 
-        elif opttype.startswith('int'):
-           rv = int
-        elif opttype.startswith('bool'):
-           rv = str2bool
-        return rv
+    ###########################################################################
     
     def _detectAddSections(self):
         '''
@@ -336,10 +354,8 @@ class ConfigBase(object):
     @classmethod
     def _detectAddSectionsC(cls):
         '''
-        detect sections present in self._optdata and add them to self.config
+        class method, detect sections present in self._optdata and add them to self.config
         also add it to self._configlist
-        
-        :param cls: class, class to configurate
         '''
         #seclist = [self._optdata[key]['sec'] for key in self._optdata.keys()]
         seclist = [cls._optdata[opt[0]]['sec'] for opt in cls._optdatalist]
@@ -352,8 +368,8 @@ class ConfigBase(object):
     
     def _addOpt(self, optname):
         '''
-        add options to self.config and self.args and self.'optname',
-        this will read metadata in self._optdatalist
+        add options to self.config and self.args and self.*option*,
+        this will read metadata from self._optdatalist
         
         :param optname: string, name of option
         '''
@@ -363,8 +379,8 @@ class ConfigBase(object):
     @classmethod
     def _addOptC(cls, optname):
         '''
-        add options to self.config and self.args and self.'optname',
-        this will read metadata in self._optdatalist
+        Class method, add options to self.config and self.args and
+        self.*option*, this will read metadata in self._optdatalist
         
         :param optname: string, name of option
         '''
@@ -376,23 +392,23 @@ class ConfigBase(object):
             optdata['d'] = os.getcwd()
         
         #add to cls.'optname'
-        setattr(cls, optname, optdata['d'])
+        cls._addOptSelfC(optname, optdata)
         
         #add to cls.config
         secname =  optdata['sec'] if optdata.has_key('sec') else 'Others'
         cls._configlist[secname].append(optname)
         if optdata.get('config', 'a')!='n':
-            strvalue = ', '.join(map(str, optdata['d'])) if type(optdata['d'])==list else str(optdata['d'])
+            strvalue = ', '.join(map(str, optdata['d'])) if isinstance(optdata['d'], list) else str(optdata['d'])
             cls.config.set(secname, optname, strvalue)
         #add to cls.args
         if optdata.get('args', 'a')!='n':
             #transform optdata to a dict that can pass to add_argument method
             pargs = dict()
             for key in optdata.keys():
-                if cls._optdatanamedic.has_key(key):
-                    pargs[cls._optdatanamedic[key]] = optdata[key]
+                if cls._optdatanamedict.has_key(key):
+                    pargs[cls._optdatanamedict[key]] = optdata[key]
             pargs['default'] = argparse.SUPPRESS
-            pargs['type'] = cls._getTypeC(optname)
+            pargs['type'] = StrConv(opttype)
             #add args
             if optdata.has_key('f'):
                 cls.args.add_argument(optname, **pargs)
@@ -402,100 +418,69 @@ class ConfigBase(object):
                 cls.args.add_argument('--'+optname, **pargs)
         return
     
+    @classmethod
+    def _addOptSelfC(cls, optname, optdata):
+        '''
+        class method, assign options value to *self.option*, using metadata
+        
+        :param optname: string, name of the option
+        :param optdata: dict, metadata of the options, get it from self._optdatalist
+        '''
+        setattr(cls, optname, optdata['d'])
+        return
+    
     def _copyConfigtoSelf(self, optnames=None):
         '''
-        copy the values in self.config to self.'options'
+        copy the options' value from self.config to self.*option*
         
-        :param optname: str or list of str, names of options whose value copied
-            from self.config to self.'optname'. Set None to update all
+        :param optnames: str or list of str, names of options whose value copied
+            from self.config to self.*option*'. Set None to update all
         '''
-        if not hasattr(self, 'mdict'):
-            self.mdict = {
-                'str': self.config.get,
-                'int': self.config.getint,
-                'float': self.config.getfloat,
-                'bool': self.config.getboolean,
-                'strlist': partial(self._getListValue, vtype='strlist'),
-                'intlist': partial(self._getListValue, vtype='intlist'),
-                'floatlist': partial(self._getListValue, vtype='floatlist'),
-                'boollist': partial(self._getListValue, vtype='boollist'),
-                }
         if optnames!=None:
-            optnames = optnames if type(optnames)==list else [optnames]
-            for optname in optnames:
-                if self._optdata.has_key(optname):
-                    secname = self._optdata[optname]['sec']
-                    opttype = self._getTypeStr(optname)
-                    setattr(self, optname, self.mdict[opttype](secname, optname))
+            optnames = optnames if isinstance(optnames, list) else [optnames]
         else:
+            optnames = []
             for secname in self.config.sections():
-                for optname in self.config.options(secname):
-                    if self._optdata.has_key(optname):
-                        opttype = self._getTypeStr(optname)
-                        setattr(self, optname, self.mdict[opttype](secname, optname))
+                optnames += self.config.options(secname) 
+                    
+        for optname in optnames:
+            if self._optdata.has_key(optname):
+                secname = self._optdata[optname]['sec']
+                opttype = self._getTypeStr(optname)
+                optvalue = self.config.get(secname, optname)
+                setattr(self, optname, str2Opt(opttype, optvalue))
         return
     
     def _copySelftoConfig(self, optnames=None):
         '''
-        copy the value in self.'options' to self.config
+        copy the value from self.*option* to self.config
         
         :param optname: str or list of str, names of options whose value copied
-            from self.'optname' to self.config. Set None to update all
+            from self.*option* to self.config. Set None to update all
         '''
         if optnames!=None:
-            optnames = optnames if type(optnames)==list else [optnames]
-            for optname in optnames:
-                if self._optdata.has_key(optname):
-                    secname = self._optdata[optname]['sec']
-                    opttype = self._getTypeStr(optname)
-                    if opttype.endswith('list'):
-                        liststr = map(str, getattr(self, optname))
-                        liststring = ', '.join(liststr)
-                        self.config.set(secname, optname, liststring)
-                    else:
-                        self.config.set(secname, optname, str(getattr(self, optname)))
+            optnames = optnames if isinstance(optnames, list) else [optnames]
         else:
+            optnames = []
             for secname in self.config.sections():
-                for optname in self.config.options(secname):
-                    if self._optdata.has_key(optname):
-                        opttype = self._getTypeStr(optname)
-                        if opttype.endswith('list'):
-                            liststr = map(str, getattr(self, optname))
-                            liststring = ', '.join(liststr)
-                            self.config.set(secname, optname, liststring)
-                        else:
-                            self.config.set(secname, optname, str(getattr(self, optname)))
+                optnames += self.config.options(secname) 
+        
+        for optname in optnames:
+            if self._optdata.has_key(optname):
+                secname = self._optdata[optname]['sec']
+                opttype = self._getTypeStr(optname)
+                optvalue = getattr(self, optname)
+                self.config.set(secname, optname, opt2Str(opttype, optvalue))
         return
     
-    def _getListValue(self, sectionname, optionname, vtype):
-        '''
-        helper function that get a list of value for string read from self.config
-        
-        :param sectionname: string, name of section in self.config
-        :param optionname: string, name of option in self.config
-        :param vtype: string, type of list, can be strlist, intlist, floatlist, boollist
-        
-        :return: list of value in desired format, or [] if options value is empty
-        ''' 
-        temp = re.split('\s*,\s*', self.config.get(sectionname, optionname))
-        if len(temp)>0:
-            if vtype.startswith('str'):
-                rv = temp
-            elif  vtype.startswith('int'):
-                rv = map(int, temp)
-            elif  vtype.startswith('float'):
-                rv = map(float, temp)
-            elif  vtype.startswith('bool'):
-                rv = map(lambda s: (s.lower()=='true')or(s.lower()=='yes'), temp)
-        else:
-            rv = []
-        return rv
+    ###########################################################################
     
     def parseArgs(self, pargs):
         '''
-        parse args and update the value in self.'optname', this will call the self.args to parse args,
+        parse args and update the value in self.*option*, this will call the
+        self.args() to parse args,
         
-        :param pargs: list of string, pargs to parse, usually be sys.argv
+        :param pargs: list of string, arguments to parse, usually comming from sys.argv
         '''
         obj = self.args.parse_args(pargs)
         changedargs = obj.__dict__.keys()
@@ -509,9 +494,9 @@ class ConfigBase(object):
     
     def parseKwargs(self, **kwargs):
         '''
-        update self.'optname' values according to the kwargs
+        update self.*option* values according to the kwargs
         
-        :param kwargs: keywords=value
+        :param kwargs: dict, keywords=value
         '''
         if kwargs!={}:
             changedargs = []
@@ -525,64 +510,99 @@ class ConfigBase(object):
 
     def parseConfigFile(self, filename):
         '''
-        read a config file and update the self.'optname'
+        read a config file and update the self.*option*
         
-        :param filename: str, file name of config file
+        :param filename: str, file name of config file (include path)
         '''
         if filename!=None:
-            if os.path.exists(filename):
+            filename = os.path.abspath(filename)
+            if os.path.exists(filename): 
+                self.configfile = filename
                 self._copySelftoConfig()
-                self.config.read(filename)
+                fileobj = FackConfigFile(filename)
+                #self.config.read(filename)
+                self.config.readfp(fileobj)
                 self._copyConfigtoSelf()
                 self._updateSelf()
         return
     
     def updateConfig(self, filename=None, args=None, **kwargs):
         '''
-        update config according to config file, args(from sys.argv) or kwargs
+        update config according to config file, args(from sys.argv) or **kwargs
         
-        1. first process file/args/kwargs passed to this method, 
-        2. read a configfile if specified in args or kwargs
-        3. call self._postProcessing()
-        4. call self._additionalPostProcessing()
-        5. write config file if specified in args or kwargs
+        1. call self._preUpdateConfig()
+        2. process file/args/kwargs passed to this method, 
+        3. read a configfile if specified in args or kwargs
+        4. call self._postUpdateConfig()
+        5. write config file if specified in args/kwargs
         
-        :param filename: string, name of config file
-        :param args: list of str, usually be sys.argv
-        :param kwargs: you can use like 'xbeamcenter=1024' or a dict to 
-            update the value of xbeamcenter
+        :param filename: str, file name of the config file
+        :param args: list of str, args passed from cmd, 
+        :param kwargs: dict, optional kwargs
+        
+        :return: True if anything updated, False if nothing updated
         '''
+        # call self._preUpdateConfig
+        self._preUpdateConfig(**kwargs)
+        
+        filename = self._findConfigFile(filename, args, **kwargs)
         if filename!=None:
             rv = self.parseConfigFile(filename)
         if args!=None:
             rv = self.parseArgs(args)
         if kwargs!={}:
             rv = self.parseKwargs(**kwargs)
-        
-        #read a configfile if specified in args or kwargs
-        if (self.configfile!='')and(self.configfile!=None):
-            self.parseConfigFile(filename=self.configfile)
-            self.configfile = ''
-            rv = self.parseArgs(args) if args!=None else None
-            rv = self.parseKwargs(**kwargs) if kwargs!={} else None
             
-        if (filename==None)and(args==None)and(kwargs=={}):
+        if (filename==None)and((args==None)or(args==[]))and(kwargs=={}):
             rv = self._updateSelf()
-        self._postProcessing(**kwargs)
+        
+        # call self._callbackUpdateConfig
+        self._postUpdateConfig(**kwargs)
+        
+        # write config file
+        self._createConfigFile()
         return rv
     
-    def writeConfig(self, filename, mode='short'):
+    def _preUpdateConfig(self, **kwargs):
         '''
-        write config to file
+        Method called before parsing args or kwargs or config file, in self.updateConfig
+        '''
+        return
+    
+    def _postUpdateConfig(self, **kwargs):
+        '''
+        Method called after parsing args or kwargs or config file, in self.updateConfig
+        '''
+        return
+    
+    ###########################################################################
+    def _createConfigFile(self):
+        '''
+        write output config file if specfied in configuration
+        the filename is specified by self.createconfig
+        '''
+        if (self.createconfig!='')and(self.createconfig!=None):
+            self.writeConfig(self.createconfig, 'short')
+            self.createconfig = ''
+        if (self.createconfigfull!='')and(self.createconfigfull!=None):
+            self.writeConfig(self.createconfigfull, 'full')
+            self.createconfigfull = ''
+        return
+    
+    def writeConfig(self, filename, mode='short', changeconfigfile = True):
+        '''
+        write config to file. the file is compatiable with python package ConfigParser
         
         :param filename: string, name of file
-        :param mode: string, 'short' or 'full' ('s' or 'f'). 
-            'short', options with 'config'=='f' will not be written into config file
-            'full', all available options in self.config will be written to config file
+        :param mode: string, 'short' or 'full' ('s' or 'f').
+            in short mode, all options with 'a' will be written, in full mode,
+            all options with 'a' or 'f' will be written
         '''
+        if changeconfigfile:
+            self.configfile = os.path.abspath(filename)
         self._updateSelf()
-        #func decide if wirte the option to config according to mode
-        #options not present in self._optdata will not be written to config
+        # func decide if wirte the option to config according to mode
+        # options not present in self._optdata will not be written to config
         if mode.startswith('s'):
             mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')=='a'
         else:
@@ -604,84 +624,112 @@ class ConfigBase(object):
         fp.close()
         return
     
-    def getHeader(self, title=None, mode='short'):
+    def getHeader(self, title=None, mode='full'):
         '''
         get a header of configurations values, 
         
-        by default, all options are written to a header, it can be disabled by 
-        set 'header' to False in self._optdata
+        :param title: str, title of header, if None, try to get it from self.defaultvalue
+        :param mode: string, 'short' or 'full' ('s' or 'f').
+            in short mode, all options with 'a' will be written, in full mode,
+            all options with 'a' or 'f' will be written
         
-        :param title: str, title of header
-        :param mode: string, 'short' or 'full' ('s' or 'f'). 
-            'short', options with 'config'=='f' will not be written into config file
-            'full', all available options in self.config will be written to config file
-        
-        :return: string, lines that can be directly writen to a text file
+        :return: string, lines with line break that can be directly writen to a text file
         '''
         
         lines = []
-        title = '# %s #' % (self._defaultheaderline if title==None else title)
+        title = '# %s #' % (self._defaultdata['headertitle'] if title==None else title)
         lines.append(title)
         #func decide if wirte the option to header according to mode
         #options not present in self._optdata will not be written to header
         if mode.startswith('s'):
-            mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')=='a'
+            mcond = lambda optname: self._optdata.get(optname, {'header':'n'}).get('header', 'a')=='a'
         else:
-            mcond = lambda optname: self._optdata.get(optname, {'config':'n'}).get('config', 'a')!='n'
+            mcond = lambda optname: self._optdata.get(optname, {'header':'n'}).get('header', 'a')!='n'
     
         for secname in self._configlist.keys():
             tlines = []
             for optname in self._configlist[secname]:
                 if mcond(optname):
                     value = getattr(self, optname)
-                    strvalue = ', '.join(map(str, value)) if isinstance(value,list) else str(value)
+                    ttype = self._getTypeStr(optname)
+                    strvalue = ', '.join(map(str, value)) if ttype.endswith('list') else str(value)
                     tlines.append("%s = %s" % (optname, strvalue))
             if len(tlines)>0:
                 lines.append("[%s]" % secname)
                 lines.extend(tlines)
-                lines.append('')         
+                lines.append('')  
+        lines.append('\n')
+        lines.append('###Data###\n')       
         rv = "\n".join(lines) + "\n"
         return rv
     
-    def _postProcessing(self, **kwargs):
+    def resetDefault(self, optnames=None):
         '''
-        post processing after parse args or kwargs or config file
-        this method is called in self.updateConfig, after all file/args/kwargs
-        some options are reset to their default to pervent process twice
+        reset all values to their default value
         
-        :param kwargs: keywords=value
+        :param optnames: list of str, name of options to reset, None for all options
         '''
-        
-        self._additionalPostProcessing(**kwargs)
-        
-        if (self.createconfig!='')and(self.createconfig!=None):
-            self.writeConfig(self.createconfig, 'short')
-            self.createconfig = ''
-        if (self.createconfigfull!='')and(self.createconfigfull!=None):
-            self.writeConfig(self.createconfigfull, 'full')
-            self.createconfigfull = ''
+        if optnames==None:
+            optnames = self._optdata.keys()
+        for optname in optnames:
+            if self._optdata.has_key(optname):
+                setattr(self, optname, self._optdata[optname]['d'])
+        self._updateSelf()
         return
     
-#IMPORTANT call this function if you want to add options as class attributes!!!
-def initConfigClass(config):
-    '''
-    init config class and add options to class
-    this funtion should be executed to generate options according to metadata defined in class
-    '''
-    config.config = ConfigParser.ConfigParser(dict_type = OrderedDict)
-    config.args = argparse.ArgumentParser(description=config._description, 
-                                          epilog=config._epilog,
-                                          formatter_class=argparse.RawDescriptionHelpFormatter)
-    config._configlist = OrderedDict({})
+    ###########################################################################
+    #IMPORTANT call this method if you want to add options as class attributes!!!
     
-    config._optdatalist = config._optdatalistpre + config._optdatalist + config._optdatalistext
-    config._optdata = dict(config._optdatalist)
-    config._detectAddSectionsC()
-    for opt in config._optdatalist:
-        key = opt[0]
-        config._addOptC(key)
-    return
+    @classmethod
+    def initConfigClass(cls):
+        '''
+        init config class and add options to class
+        
+        IMPORTANT call this method after you define the metadata of your config
+        class to add options as class attributes!!!
+        '''
+        cls._preInitConfigClass()
+        
+        cls.config = ConfigParser.ConfigParser(dict_type = OrderedDict)
+        cls.args = argparse.ArgumentParser(description=cls._description, 
+                                              epilog=cls._epilog,
+                                              formatter_class=argparse.RawDescriptionHelpFormatter)
+        cls._configlist = OrderedDict({})
+        
+        cls._optdatalist = cls._optdatalist_default + cls._optdatalist
+        cls._optdata = dict(cls._optdatalist)
+        cls._detectAddSectionsC()
+        for opt in cls._optdatalist:
+            key = opt[0]
+            cls._addOptC(key)
+            
+        cls._postInitConfigClass()
+        return
+    
+    @classmethod
+    def _postInitConfigClass(cls):
+        '''
+        additional processes called after initConfigClass
+        
+        overload it
+        '''
+        pass
+    
+    @classmethod
+    def _preInitConfigClass(cls):
+        '''
+        additional processes called before initConfigClass
+        
+        overload it
+        '''
+        pass
 
 #VERY IMPORTANT!!!
 #add options to class
 #initConfigClass(ConfigBase)
+#ConfigBase.initConfigClass()
+
+if __name__=='__main__':
+
+    test = ConfigBase()
+    test.updateConfig()

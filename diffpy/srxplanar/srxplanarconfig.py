@@ -19,61 +19,39 @@ import re, os, sys
 from functools import partial
 import argparse
 
-from diffpy.confutils.config import ConfigBase, initConfigClass
+from diffpy.confutils.config import ConfigBase
 from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, _configPropertyRW
 
-class SrXplanarConfig(ConfigBase):
-    '''
-    config class, based on ConfigBase class in diffpy.confutils
-    '''
-    
-    # Text to display before the argument help
-    _description = \
-    '''
-    SrXplanar -- integrate 2D powder diffraction image to 1D with unceratinty propagation
-    ''' 
+_description = \
+'''
+SrXplanar -- integrate 2D powder diffraction image to 1D with unceratinty propagation
+''' 
     # Text to display after the argument help
-    _epilog = \
-    '''
+_epilog = \
+'''
 Examples:
 
-    srxplanar KFe2As2-00838.tif -c test.cfg
-    --integration using config file test.cfg
+srxplanar KFe2As2-00838.tif -c test.cfg
+--integration using config file test.cfg
 
-    srxplanar KFe2As2-00838.tif -fit2d fit2d.txt
-    --integration using calibration information in fit2d.txt
-    
-    srxplanar *.tif -c test.cfg -s
-    --integration all .tif image and sum them into one
-    
-    srxplanar KFe2As2-00838.tif -fit2d fit2d.txt --integrationspace twotheta
-    -- integrate using calibration information in fit2d.txt and integrate into two theta space
-    
-    srxplanar --createconfig config.cfg
-    --create default (short) config file using all default value
-    
-    srxplanar --createconfigfull configfull.cfg -fit2d fit2d.txt
-    --create a complete config file using calibration information in fit2d.txt 
-    '''
-    
-    # optdata contains these keys:
-    # full(f), short(s), help(h), type(t), action(a), nargs(n), default(d), choices(c), required(r), dest, const
-    
-    '''optional args: 
-        'args': default is 'a'
-            if 'a', this option will be available in self.args
-            if 'n', this option will not be available in self.args
-        'config': default is 'a'
-            if 'f', this option will present in self.config and be written to config file only in full mode
-            if 'a', this option will present in self.config and be written to config file both in full and short mode
-            if 'n', this option will not present in self.config
-        'header', default is 'a'
-            if 'f', this option will be written to header only in full mode
-            if 'a', this option will be written to header both in full and short mode
-            if 'n', this option will not be written to header
-        so in short mode, all options with 'a' will be written, in full mode, all options with 'a' or 'f' will be written
-    '''
-    _optdatalistpre = [
+srxplanar KFe2As2-00838.tif -fit2d fit2d.txt
+--integration using calibration information in fit2d.txt
+
+srxplanar *.tif -c test.cfg -s
+--integration all .tif image and sum them into one
+
+srxplanar KFe2As2-00838.tif -fit2d fit2d.txt --integrationspace twotheta
+-- integrate using calibration information in fit2d.txt and integrate into two theta space
+
+srxplanar --createconfig config.cfg
+--create default (short) config file using all default value
+
+srxplanar --createconfigfull configfull.cfg -fit2d fit2d.txt
+--create a complete config file using calibration information in fit2d.txt 
+'''
+
+_optdatalist = [
+        # control group
         ['filenames',{'sec':'Control', 'config':'n', 'header':'n',
             'f':'filename',
             'h':'filename or list of filenames or filename pattern or list of filename pattern',
@@ -81,60 +59,43 @@ Examples:
             'd':[],}],
         ['output',{'sec':'Experiment', 'config':'n', 'header':'n',
             's':'o',
-            'h':'base filename of output file',
+            'h':'basename of output file',
             'd':'',}],
-        ]
-    
-    _optdatalist = [
-        ['configfile',{'sec':'Control', 'config':'n', 'header':'n',
-            's':'c',
-            'h':'name of input config file',
-            'd':'',}],
-        ['createconfig',{'sec':'Control', 'config':'n', 'header':'n',
-            'h':'create a config file according to default or current values',
-            'd':'',}],
-        ['createconfigfull',{'sec':'Control', 'config':'n', 'header':'n',
-            'h':'create a full configurable config file',
-            'd':'',}],
-        ]
-    
-    _optdatalistext = [
-        # control group
-        ['summation',{'sec':'Control', 'header':'n',
+        ['summation',{'sec':'Control', 'config':'n', 'header':'n',
             's':'s',
             'h':'sum all the image and then integrate',
             'n':'?',
             'co':True,
             'd':False,}],
         #Expeiment gropu
-        ['fit2dconfig',{'sec':'Experiment',
+        ['fit2dconfig',{'sec':'Experiment', 'config':'n', 'header':'n',
             's':'fit2d',
             'h':'fit2d calibration file name. It contains the calibration results copy from fit2d cmd windows',
             'd':'',}],
-        ['tifdirectory',{'sec':'Experiment', 'header':'n',
-            's':'tifdir',
-            'h':'directory of raw tif files',
-            'd':'currentdir',}],
-        ['savedirectory',{'sec':'Experiment', 'header':'n',
+        ['opendirectory',{'sec':'Control', 'header':'n',
+            's':'opendir',
+            'h':'directory of input raw tif files',
+            'd':'currentdir',
+            'tt':'directory'}],
+        ['savedirectory',{'sec':'Control', 'header':'n',
             's':'savedir',
-            'h':'directory of save files',
-            'd':'currentdir',}],
-        ['backgroundfile',{'sec':'Experiment',
-            'h':'background file name, should be a image file',
-            'd':'',}],
+            'h':'directory of output files',
+            'd':'currentdir',
+            'tt':'directory'}],
         ['addmask',{'sec':'Experiment',
-            'h':'options to control masks, add "deadpixel" to mask the deadpixel, add "spot" \
-                to mask the spot, or names of mask file, support .npy and .tif and .msk(fit2dmsk) \
-                add "selfcorr" to mask the pixel whose intensity is too high/low compare to pixels in the same bin',
+            'h':
+'''list of masks to apply on the image. Specify filename of mask file (support .msk, .npy, and .tif).
+add "edgemask" to mask the pixels at edges, add "deadpixel" to mask dead pixels, add "brightpixel"\
+to mask bright pixels.''',
             'n':'*',
             'd':['edgemask'],}],
         ['createmask',{'sec':'Control', 'config':'n','header':'n',
-            'h':'create a mask file according to current image file and value of addmask, maskedges',
+            'h':'create a mask file according to current image file and value of addmask',
             'd':'',}],
         ['integrationspace',{'sec':'Experiment',
-            'h':'integration space, could be twotheta or qspace',
+            'h':'integration space',
             'd':'twotheta',
-            'c':['twotheta','qspace'],}],
+            'c':['qspace','twotheta'],}],
         ['wavelength',{'sec':'Experiment',
             'h':'wavelength of x-ray, in A',
             'd':0.1000,}],
@@ -169,20 +130,20 @@ Examples:
         #Beamline group
         ['includepattern',{'sec':'Beamline','header':'n','config':'f',
             's':'ipattern',
-            'h':'file name pattern for included files',
+            'h':'list of string, file name patterns for included files',
             'n':'*',
             'd':['*.tif', '*.tif.bz2'],}],
         ['excludepattern',{'sec':'Beamline','header':'n','config':'f',
             's':'epattern',
-            'h':'file name pattern for excluded files',
+            'h':'list of string, file name patterns for excluded files',
             'n':'*',
             'd':['*.dark.tif', '*.raw.tif'],}],
-        ['fliphorizontal',{'sec':'Beamline','header':'n','config':'f',
+        ['fliphorizontal',{'sec':'Beamline',
             'h':'filp the image horizontally',
             'n':'?',
             'co':True,
             'd':False,}],
-        ['flipvertical',{'sec':'Beamline','header':'n','config':'f',
+        ['flipvertical',{'sec':'Beamline',
             'h':'filp the image vertically',
             'n':'?',
             'co':True,
@@ -210,28 +171,22 @@ Examples:
             'n':'?',
             'co':True,
             'd':True,}],
-        ['sacorrectionenable',{'sec':'Others','config':'f',
+        ['sacorrectionenable',{'sec':'Others',
             's':'sacorr',
             'h':'enable solid angle correction',
             'n':'?',
             'co':True,
             'd':True,}],
-        ['polcorrectionenable',{'sec':'Others','config':'f',
+        ['polcorrectionenable',{'sec':'Others',
             's':'polarcorr',
             'h':'enable polarization correction',
             'n':'?',
             'co':True,
             'd':True,}],        
-        ['polcorrectf',{'sec':'Others','config':'f',
+        ['polcorrectf',{'sec':'Others',
             's':'polarf',
             'h':'polarization correction factor',
             'd':0.99,}],
-        ['selfcorrenable',{'sec':'Others','config':'f',
-            's':'selfcorr',
-            'h':'mask the pixels whose intensity is too high/low compare to other pixels in the same bin',
-            'n':'?',
-            'co':True,
-            'd':True,}],
         ['gsasoutput',{'sec':'Others','header':'n',
             'h':'select if want to output gsas format file',
             'c':['None', 'std', 'esd', 'fxye'],
@@ -239,10 +194,12 @@ Examples:
         ['filenameplus',{'sec':'Others','header':'n',
             'h':'str that added behind normal file name',
             'd':'',}],
-        ['maskedges',{'sec':'Others','config':'f',
+        ['maskedges',{'sec':'Others',
             'h':'mask the edge pixels, first four means the number of pixels masked in each edge \
-                (left, right, top, bottom), the last one is the radius of a region masked around the corner',
+(left, right, top, bottom), the last one is the radius of a region masked around the corner',
             'n':5,
+            'tt':'array',
+            't':'intlist',
             'd':[20,20,20,20,100],}],
         ['nocalculation',{'sec':'Others','config':'n','header':'n',
             'h':'set True to disable all calculation, will automaticly set True if createconfig or createmask',
@@ -251,29 +208,44 @@ Examples:
             'd':False,}],
         ]
     
-    #default config file path and name
-    _defaultconfigpath = ['srxplanar.cfg', 'SrXplanar.cfg']
+_defaultdata = {'configfile': ['srxplanar.cfg', 'SrXplanar.cfg'],
+                'headertitle': 'SrXplanar configration' 
+                }
+
+class SrXplanarConfig(ConfigBase):
+    '''
+    config class, based on ConfigBase class in diffpy.confutils
+    '''
     
-    #default first list for header
-    _defaultheaderline = 'SrXplanar configration'
+    # Text to display before the argument help
+    _description = _description
     
-    def _additionalInit(self):
+    # Text to display after the argument help
+    _epilog = _epilog
+
+    _optdatalist = _optdatalist
+        
+    _defaultdata = _defaultdata
+ 
+    def _preInit(self, **kwargs):
         '''
-        method called in init process
-        this method will be called after all options in self._optdata are processed, i.e. all options are created. 
-        and before reading config from file/args/kwargs
+        method called in init process, overload it!
+        
+        this method will be called before reading config from file/args/kwargs
         
         add degree/rad delegation for rotation, tilt, tthstep, tthmax
         '''
+        
         for name in ['rotation', 'tilt', 'tthstep', 'tthmax']:
             setattr(self.__class__, name, _configPropertyRad(name+'d'))
-        self._configlist['Experiment'].extend(['rotation', 'tilt', 'tthstep', 'tthmax'])
+        #cls._configlist['Experiment'].extend(['rotation', 'tilt', 'tthstep', 'tthmax'])
         return
     
-    def _additionalUpdataSelf(self, **kwargs):
+    def _preUpdateSelf(self, **kwargs):
         '''
-        additional process called in self._updateSelf, this method is called before 
-        self._copySelftoConfig(), i.e. before copy options value to self.config (config file)
+        additional process called in self._updateSelf, this method is called
+        before self._copySelftoConfig(), i.e. before copy options value to
+        self.config (config file)
         
         check the tthmaxd and qmax, and set tthorqmax, tthorqstep according to integration space
         
@@ -288,7 +260,8 @@ Examples:
             self.tthorqstep = self.qstep
         return
     
-    def _additionalPostProcessing(self, nofit2d=False, **kwargs):
+    #def _postUpdateConfig(self, nofit2d=False, **kwargs):
+    def _postUpdateConfig(self, **kwargs):
         '''
         post processing after parse args or kwargs, this method is called after 
         in self._postPocessing and before creating config file action  
@@ -301,9 +274,13 @@ Examples:
             results.
         :param kwargs: optional kwargs
         '''
-        if not nofit2d:
-            self._loadFromFit2D(self.fit2dconfig)
-        if self.createconfig!='' or self.createconfigfull!='':
+        '''if not nofit2d:
+            self._loadFromFit2D(self.fit2dconfig)'''
+        
+        self._loadFromFit2D(self.fit2dconfig)
+        if (self.createconfig!='')and(self.createconfig!=None):
+            self.nocalculation = True
+        if (self.createconfigfull!='')and(self.createconfigfull!=None):
             self.nocalculation = True
         if self.createmask!='':
             self.nocalculation = True
@@ -313,14 +290,13 @@ Examples:
         '''
         load parameters from fit2d calibration information. copy/paste the fit2d calibration 
         results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
-    
-        :param filename: str, file name (with full path if not in current dir) of fit2d file,
-            or a string containing the calibraiton parameters copy from fit2d.
         '''
         rv = parseFit2D(filename)
-        for optname in rv.keys():
-            setattr(self, optname, rv[optname])
-        self._updateSelf()
+        if len(rv.values())>0:
+            for optname in rv.keys():
+                setattr(self, optname, rv[optname])
+            self.fit2dconfig = ''
+            self._updateSelf()
         return
 
 def checkMax(config):
@@ -401,7 +377,7 @@ def parseFit2D(filename):
                 rv['tiltd'] = findFloat(line)[0]
     return rv
 
-initConfigClass(SrXplanarConfig)
+SrXplanarConfig.initConfigClass()
 
 if __name__=='__main__':
     a = SrXplanarConfig()

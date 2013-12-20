@@ -48,12 +48,10 @@ class SrXplanar(object):
         else:
             self.config = SrXplanarConfig(filename=configfile, args=args, **kwargs)
         #init modulars
-        if not self.config.nocalculation:
-            self.mask = Mask(self.config)
-            self.loadimage = LoadImage(self.config)
-            self.calculate = Calculate(self.config)
-            self.saveresults = SaveResults(self.config)                
-            self.prepareCalculation(False)
+        self.mask = Mask(self.config)
+        self.loadimage = LoadImage(self.config)
+        self.calculate = Calculate(self.config)
+        self.saveresults = SaveResults(self.config)
         return
     
     def updateConfig(self, filename=None, args=None, **kwargs):
@@ -68,14 +66,11 @@ class SrXplanar(object):
         '''
         self.config.updateConfig(filename=filename, args=args, **kwargs)
         #update instances
-        self.mask.prepareCalculation()
-        self.loadimage.prepareCalculation()
         self.calculate.prepareCalculation()
         self.saveresults.prepareCalculation()
-        self.prepareCalculation(False)
         return
         
-    def prepareCalculation(self, reloadimage=True):
+    def prepareCalculation(self, pic=None):
         '''
         prepare data used in calculation
         
@@ -85,15 +80,21 @@ class SrXplanar(object):
         '''
         self.staticmask = self.mask.staticMask()
         self.correction = self.calculate.genCorrectionMatrix()
-        if reloadimage:
-            dynamicmask = self.mask.dynamicMask(self.pic)
-            if dynamicmask != None:
-                mask = np.logical_or(self.staticmask, dynamicmask)
-                self.calculate.genIntegrationInds(mask)
-            else:
-                self.calculate.genIntegrationInds(self.staticmask)
-        else:
-            self.calculate.genIntegrationInds(self.staticmask)
+        # if a pic is provided, then generate one-time dynamicmask 
+        if pic != None:
+            image = self._getPic(pic)
+            image *= self.correction
+            dymask = self.mask.dynamicMask(image, addmask = ['dead', 'bright'])
+            dymask = np.logical_or(self.staticmask, dymask)
+            self.calculate.genIntegrationInds(dymask)
+            chi = self.calculate.intensity(image)
+            index = np.rint(self.calculate.tthorqmatrix / self.config.tthorqstep).astype(int)
+            index[index>=len(chi[1])] = len(chi[1]-1)
+            avgimage = chi[1][index.ravel()].reshape(index.shape)
+            mask = np.logical_or(image<avgimage*0.7, image>avgimage*1.5)
+            self.staticmask = np.logical_or(np.logical_or(self.staticmask, mask), dymask)
+        
+        self.calculate.genIntegrationInds(self.staticmask)
         return
     
     def _picChanged(self):
@@ -107,7 +108,6 @@ class SrXplanar(object):
             mask = np.logical_or(self.staticmask, dynamicmask)
             self.calculate.genIntegrationInds(mask)
         return
-    
     
     def _getSaveFileName(self, imagename=None, filename=None):
         '''
@@ -127,7 +127,19 @@ class SrXplanar(object):
             rv = imagename
         return rv
     
-       
+    def _getPic(self, image, flip=True):
+        if isinstance(image, list):
+            rv = np.zeros((self.config.ydimension, self.config.xdimension))
+            for imagefile in image:
+                rv += self._getPic(imagefile)
+        elif isinstance(image, (str, unicode)):
+            rv = self.loadimage.loadImage(image)
+        elif flip:
+            rv = self.loadimage.flipImage(image)
+        else:
+            rv = image
+        return rv
+    
     def integrate(self, image, savename=None, savefile=True, flip=True):
         '''
         integrate 2d image to 1d diffraction pattern, then save to disk
@@ -145,24 +157,14 @@ class SrXplanar(object):
             name of file to save to disk
         '''
         rv = {}
-        if isinstance(image, (str, unicode)):
-            self.pic = self.loadimage.loadImage(image)
-        elif flip:
-            self.pic = self.loadimage.flipImage(image)
-        else:
-            self.pic = image
+        self.pic = self._getPic(image, flip)
         rv['filename'] = self._getSaveFileName(imagename= image, filename=savename)
         self._picChanged()
         #calculate
-        if self.config.uncertaintyenable:
-            self.pic = self.pic * self.correction
-            picvar = self.calculate.varianceLocal(self.pic)
-            rv['chi'] = self.chi = self.calculate.intensity(self.pic, picvar)
-        else:
-            self.pic = self.pic * self.correction
-            rv['chi'] = self.chi = self.calculate.intensity(self.pic)
+        rv['chi'] = self.chi = self.calculate.intensity(self.pic)
+        #save
         if savefile:
-            self.saveresults.save(rv)
+            rv['filename'] = self.saveresults.save(rv)
         return rv
     
     def integrateFilelist(self, filelist, summation=None, filename=None):
@@ -170,23 +172,25 @@ class SrXplanar(object):
         process all file in filelist, integrate them separately or together
         
         :param filelist: list of string, file list (full path)
-        :param sum: bool, sum all files together or not
+        :param summation: bool or None, sum all files together or not, if None,
+            use self.config.summation
+        :param filename: file name of output file 
         '''
         summation =  self.config.summation if summation == None else summation
         if (summation)and(len(filelist)>1):
-            image = np.zeros((self.config.ydimension, self.config.xdimension))
-            for imagefile in filelist:
-                image += self.loadimage.loadImage(imagefile)
-            filename = os.path.splitext(imagefile)[0]+'_sum.chi' if filename == None else filename
-            self.integrate(image, savename = filename, flip=False)
+            image = self._getPic(filelist)
+            filename = os.path.splitext(filelist[-1])[0]+'_sum.chi' if filename == None else filename
+            rv = [self.integrate(image, savename = filename, flip=False)]
         else:
             i = 0
+            rv = []
             for imagefile in filelist:
                 if filename==None:
-                    self.integrate(imagefile)
+                    rvv = self.integrate(imagefile)
                 else:
-                    self.integrate(imagefile, savename = filename+'%03d'%i)
-        return
+                    rvv = self.integrate(imagefile, savename = filename+'%03d'%i)
+                rv.append(rvv)
+        return rv
     
     def process(self):
         '''
@@ -198,20 +202,22 @@ class SrXplanar(object):
         
         :return: None
         '''
-        #if any configrations is passed to srxplanar
-        if self.config.initanything:
-            if not self.config.nocalculation:
-                filelist = self.loadimage.genFileList()
+        if not self.config.nocalculation:
+            filelist = self.loadimage.genFileList()
+            if len(filelist)>0:
+                self.prepareCalculation(pic = filelist[0])
                 self.integrateFilelist(filelist)
-            #mask creating
-            elif self.config.createmask!='':
-                self.createMask()
+            else:
+                print 'No input files or configurations'
+                self.config.args.print_help()
+        #mask creating
+        elif self.config.createmask!='':
+            self.createMask()
         #if no config is passed to srxplanar
         else:
             print 'No input files or configurations'
             self.config.args.print_help()
         return
-    
     
     def createMask(self, filename= None, pic=None, addmask=None):
         '''

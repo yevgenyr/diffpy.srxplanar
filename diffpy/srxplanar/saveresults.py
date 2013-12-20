@@ -50,7 +50,7 @@ class SaveResults(object):
             filenamep = '_'.join([filebase, self.filenameplus, self.integrationspace])
         else:
             filenamep = '_'.join([filebase, self.integrationspace])
-        filepathwithoutext = self.savedirectory + '/' + filenamep
+        filepathwithoutext = os.path.join(self.savedirectory, filenamep)
         return filepathwithoutext
         
     def save(self, rv):
@@ -61,11 +61,11 @@ class SaveResults(object):
             the rv['chi'] should be a 2d array with shape (2,len of intensity) or (3, len of intensity)
             file name is generated according to orginal file name and savedirectory
         '''
-        self.saveChi(rv['chi'], rv['filename'])
+        rv = self.saveChi(rv['chi'], rv['filename'])
         if self.gsasoutput:
             if self.gsasoutput in set(['std', 'esd', 'fxye']):
-                self.saveGSAS(rv['chi'], rv['filename'])
-        return
+                rv = [rv, self.saveGSAS(rv['chi'], rv['filename'])]
+        return rv
     
     def saveChi(self, xrd, filename):
         '''
@@ -79,7 +79,7 @@ class SaveResults(object):
         f.write(self.config.getHeader(mode='short'))
         np.savetxt(f, xrd.transpose(), fmt='%g')
         f.close()
-        return
+        return filepath
     
     def saveGSAS(self, xrd, filename):
         '''
@@ -97,7 +97,7 @@ class SaveResults(object):
             s = writeGSASStr(os.path.splitext(path)[0], self.gsasoutput, xrd[0], xrd[1])
         f.write(s)
         f.close()
-        return
+        return filepath
   
 def writeGSASStr(name, mode, tth, iobs, esd=None):
     """
