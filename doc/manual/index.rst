@@ -13,7 +13,6 @@ Contents:
    
    intro
    install
-   usage
    
 
 Indices and tables
