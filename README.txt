@@ -20,14 +20,14 @@ REQUIREMENTS
 
 The diffpy.srxplanar requires Python 2.6 or 2.7 and the following software:
 
-    setuptools	>=0.61(https://pypi.python.org/pypi/setuptools)
+    setuptools  >=0.61(https://pypi.python.org/pypi/setuptools)
     numpy       >=1.60(http://www.numpy.org/)
-    scipy		>=1.10(www.scipy.org/)
-    FabIO		>=0.80(http://sourceforge.net/projects/fable/files/fabio/)
+    scipy       >=1.10(www.scipy.org/)
+    FabIO       >=0.80(http://sourceforge.net/projects/fable/files/fabio/)
 
 If your python version < 2.7 (these two packages are included in 2.7 but not in 2.6)
-	ordereddict	(https://pypi.python.org/pypi/ordereddict)
-	argparse	(https://pypi.python.org/pypi/argparse)
+    ordereddict (https://pypi.python.org/pypi/ordereddict)
+    argparse    (https://pypi.python.org/pypi/argparse)
 
 On Ubuntu Linux the part of required software can be easily installed using
 the system package manager:
