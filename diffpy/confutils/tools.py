@@ -9,7 +9,7 @@
 # File coded by:    Xiaohao Yang
 #
 # See AUTHORS.txt for a list of people who contributed.
-# See LICENSENOTICE.txt for license information.
+# See LICENSE.txt for license information.
 #
 ##############################################################################
 
@@ -21,7 +21,7 @@ import hashlib
 
 def _configPropertyRad(nm):
     '''
-    helper function of options delegation, rad 2 degree
+    helper function of options delegation, rad to degree
     '''
     rv = property(fget = lambda self: np.radians(getattr(self, nm)), 
                   fset = lambda self, val: setattr(self, nm, np.degrees(val)), 
@@ -31,6 +31,8 @@ def _configPropertyRad(nm):
 def _configPropertyR(name):
     '''
     Create a property that forwards self.name to self.config.name.
+    
+    read only
     '''
     rv = property(fget = lambda self: getattr(self.config, name),
             doc='attribute forwarded to self.config, read-only')
@@ -39,6 +41,8 @@ def _configPropertyR(name):
 def _configPropertyRW(name):
     '''
     Create a property that forwards self.name to self.config.name.
+    
+    read and write
     '''
     rv = property(fget = lambda self: getattr(self.config, nm), 
                   fset = lambda self, value: setattr(self.config, nm, value),
@@ -47,6 +51,9 @@ def _configPropertyRW(name):
     return rv
 
 def str2bool(v):
+    '''
+    turn string to bool
+    '''
     return v.lower() in ("yes", "true", "t", "1")
 
 def opt2Str(opttype, optvalue):
@@ -68,9 +75,15 @@ def opt2Str(opttype, optvalue):
 
 def StrConv(opttype):
     '''
-    get the type (or converter function) according to the opttype
+    get the type (a converter function) according to the opttype
     
-    the function doesn't take list 
+    the function doesn't take list
+    
+    :param opttype: string, a type of options, could be 'str', 'int',
+        'float', or 'bool'
+        
+    :return: type (converter function) 
+    
     '''
     if opttype.startswith('str'):
         conv = str
@@ -102,8 +115,11 @@ def str2Opt(opttype, optvalue):
         rv = conv(optvalue)
     return rv
 
-class FackConfigFile(object):
-    
+class FakeConfigFile(object):
+    '''
+    A fake configfile object used in reading config from header of data
+    or a real config file. 
+    '''
     def __init__(self, configfile, endline='###Data###'):
         self.configfile = configfile
         self.fp = open(configfile)
@@ -113,6 +129,9 @@ class FackConfigFile(object):
         return
     
     def readline(self):
+        '''
+        readline function
+        '''
         line = self.fp.readline()
         if line.startswith(self.endline) or self.ended:
             rv = ''
@@ -122,11 +141,20 @@ class FackConfigFile(object):
         return rv
     
     def close(self):
+        '''
+        close the file
+        '''
         self.fp.close()
         return    
 
 def checkCRC32(filename):
-    '''calculate the crc32 value of file'''
+    '''
+    calculate the crc32 value of file
+    
+    :param filename: path to the file
+    
+    :return: crc32 value of file
+    '''
     try:
         fd = open(filename, 'rb')
     except:
@@ -140,7 +168,13 @@ def checkCRC32(filename):
     return prev
 
 def checkMD5(filename, blocksize=65536):
-    '''calculate the MD5 value of file'''
+    '''
+    calculate the MD5 value of file
+    
+    :param filename: path to the file
+    
+    :return: md5 value of file
+    '''
     try:
         fd = open(filename, 'rb')
     except:
@@ -154,9 +188,12 @@ def checkMD5(filename, blocksize=65536):
     return md5.hexdigest()
 
 def checkFileVal(filename):
-    '''check file integrity using crc32 and md5. It will read file twice then
+    '''
+    check file integrity using crc32 and md5. It will read file twice then
     compare the crc32 and md5. If two results doesn't match, it will wait until 
     the file is completed written to disk.
+    
+    :param filename: path to the file
     '''
     valflag = False
     lastcrc = checkCRC32(filename)

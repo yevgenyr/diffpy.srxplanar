@@ -9,7 +9,7 @@
 # File coded by:    Xiaohao Yang
 #
 # See AUTHORS.txt for a list of people who contributed.
-# See LICENSENOTICE.txt for license information.
+# See LICENSE.txt for license information.
 #
 ##############################################################################
 
@@ -35,7 +35,7 @@ except:
     from ordereddict import OrderedDict
 
 from diffpy.confutils.tools import _configPropertyRad, _configPropertyR, \
-    _configPropertyRW, str2bool, opt2Str, str2Opt, StrConv, FackConfigFile
+    _configPropertyRW, str2bool, opt2Str, str2Opt, StrConv, FakeConfigFile
 
 class ConfigBase(object):
     '''
@@ -224,7 +224,7 @@ class ConfigBase(object):
             rv = filename
         if (args!=None):
             if ('--configfile' in args) or ('-c' in args):
-                obj = self.args.parse_args(pargs)
+                obj = self.args.parse_args(args)
                 rv = obj.configfile
         if kwargs.has_key('configfile'):
             rv = kwargs['configfile']
@@ -519,7 +519,7 @@ class ConfigBase(object):
             if os.path.exists(filename): 
                 self.configfile = filename
                 self._copySelftoConfig()
-                fileobj = FackConfigFile(filename)
+                fileobj = FakeConfigFile(filename)
                 #self.config.read(filename)
                 self.config.readfp(fileobj)
                 self._copyConfigtoSelf()
@@ -685,7 +685,7 @@ class ConfigBase(object):
         '''
         init config class and add options to class
         
-        IMPORTANT call this method after you define the metadata of your config
+        IMPORTANT: call this method after you define the metadata of your config
         class to add options as class attributes!!!
         '''
         cls._preInitConfigClass()

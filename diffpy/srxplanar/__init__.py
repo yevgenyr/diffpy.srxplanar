@@ -9,7 +9,7 @@
 # File coded by:    Xiaohao Yang
 #
 # See AUTHORS.txt for a list of people who contributed.
-# See LICENSENOTICE.txt for license information.
+# See LICENSE.txt for license information.
 #
 ##############################################################################
 
@@ -21,13 +21,6 @@ from diffpy.srxplanar.srxplanar import SrXplanar
 from diffpy.srxplanar.srxplanarconfig import SrXplanarConfig
 
 # unit tests
-def test():
-    '''
-    Execute all unit tests for the diffpy.pdfgetx package.
-    Return a unittest TestResult object.
-    '''
-    from diffpy.srxplanar.tests import test
-    return test()
 
 
 # End of file

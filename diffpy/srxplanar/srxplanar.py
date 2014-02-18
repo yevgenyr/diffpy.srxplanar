@@ -9,11 +9,12 @@
 # File coded by:    Xiaohao Yang
 #
 # See AUTHORS.txt for a list of people who contributed.
-# See LICENSENOTICE.txt for license information.
+# See LICENSE.txt for license information.
 #
 ##############################################################################
 
-'''SrSig2D main modular
+'''
+srxplanar main modular
 '''
 
 import numpy as np
@@ -28,7 +29,8 @@ from diffpy.srxplanar.mask import Mask
 from diffpy.srxplanar.saveresults import SaveResults
 
 class SrXplanar(object):
-    '''main modular for srxplanar
+    '''
+    main modular for srxplanar
     '''
     
     def __init__(self, srxplanarconfig=None, configfile=None, args=None, **kwargs):
@@ -74,7 +76,8 @@ class SrXplanar(object):
         '''
         prepare data used in calculation
         
-        :param reloadimage: boolean, if True, then recalculate data related to image data such as dynamic mask
+        :param pic: str, list of str, or 2d array, if provided, then recalculate 
+            dynamic mask, using pic
         
         :return: None
         '''
@@ -86,12 +89,14 @@ class SrXplanar(object):
             image *= self.correction
             dymask = self.mask.dynamicMask(image, addmask = ['dead', 'bright'])
             dymask = np.logical_or(self.staticmask, dymask)
+            #dymask = self.staticmask
             self.calculate.genIntegrationInds(dymask)
             chi = self.calculate.intensity(image)
+            np.save('chi', chi)
             index = np.rint(self.calculate.tthorqmatrix / self.config.tthorqstep).astype(int)
             index[index>=len(chi[1])] = len(chi[1]-1)
             avgimage = chi[1][index.ravel()].reshape(index.shape)
-            mask = np.logical_or(image<avgimage*0.7, image>avgimage*1.5)
+            mask = np.logical_or(image<avgimage*0.5, image>avgimage*2.0)
             self.staticmask = np.logical_or(np.logical_or(self.staticmask, mask), dymask)
         
         self.calculate.genIntegrationInds(self.staticmask)
@@ -128,6 +133,20 @@ class SrXplanar(object):
         return rv
     
     def _getPic(self, image, flip=True):
+        '''
+        load picture to 2d array
+        
+        :param image: could be a string, a list of string or a 2d array, 
+            if string, load the image file using the string as the path.
+            if list of string, load the image files using the string as their path
+            and sum them togethor
+            if 2d array, use that array directly
+        :param flip: if image is str or list of str, flip will be ignored,
+            if image is 2d array, array will be flip if True and flip behavior is 
+            controlled using the option value in self.config
+            
+        :return: 2d array of image
+        '''
         if isinstance(image, list):
             rv = np.zeros((self.config.ydimension, self.config.xdimension))
             for imagefile in image:
@@ -174,7 +193,11 @@ class SrXplanar(object):
         :param filelist: list of string, file list (full path)
         :param summation: bool or None, sum all files together or not, if None,
             use self.config.summation
-        :param filename: file name of output file 
+        :param filename: file name of output file
+        
+        :return: list of dict, in each dict, rv['chi'] is a 2d array of integrated intensity, shape is (2, len of intensity) 
+            or (3, len of intensity) as [tth or q, intensity, (uncertainty)]. rv['filename'] is the 
+            name of file to save to disk
         '''
         summation =  self.config.summation if summation == None else summation
         if (summation)and(len(filelist)>1):
@@ -227,7 +250,7 @@ class SrXplanar(object):
         :param pic: 2d image array, may used in generating dynamic mask, Be careful if this one is flipped or not
         :param addmask: list of str, control how to generate mask, see Mask module for detail
         
-        :return: 2d array, 0 stands for masked pixel here
+        :return: 2d array, 1 stands for masked pixel here
         '''
         filename = self.config.createmask if filename==None else filename
         filename = 'mask.npy' if filename =='' else filename

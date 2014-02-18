@@ -9,7 +9,7 @@
 # File coded by:    Xiaohao Yang
 #
 # See AUTHORS.txt for a list of people who contributed.
-# See LICENSENOTICE.txt for license information.
+# See LICENSE.txt for license information.
 #
 ##############################################################################
 
@@ -18,7 +18,6 @@ import scipy.sparse as ssp
 import scipy.ndimage.filters as snf
 import scipy.ndimage.morphology as snm
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
-
 
 class Calculate(object):
     '''
@@ -51,7 +50,6 @@ class Calculate(object):
 
 
     def __init__(self, p):
-        #create parameter proxy, so that parameters can be accessed by self.parametername in read-only mode
         self.config = p
         self.prepareCalculation()
         return
@@ -70,6 +68,10 @@ class Calculate(object):
         return
     
     def genTTHorQMatrix(self):
+        '''
+        generate a twotheta matrix or q matrix which stores the tth or q value
+        or each pixel
+        '''
         #set tth or q grid
         if self.integrationspace == 'twotheta':
             self.bin_edges = np.r_[0, np.arange(self.tthstep/2, self.tthmax, self.tthstep)]
@@ -83,36 +85,26 @@ class Calculate(object):
     
     def genIntegrationInds(self, mask=None):
         '''
-        generate index used in integration
+        generate self.bin_number used in integration
         
         :param mask: mask 2D array, same dimension as image, 1 for masked pixel
         
-        :return: self.ind
+        :return: self.bin_number
         '''
-        tthorqmatrix = np.array(self.tthorqmatrix)
+        self.maskedmatrix = np.array(self.tthorqmatrix)
         if mask == None:
             mask = np.zeros((self.ydimension, self.xdimension), dtype=bool)
-        tthorqmatrix[mask] = 1000.0
-        tthorqmatrix = tthorqmatrix.ravel()
+        self.maskedmatrix[mask] = 1000.0
         
-        self.ind = np.argsort(tthorqmatrix)
-        sa = tthorqmatrix[self.ind] 
-        self.bin_index = np.r_[sa.searchsorted(self.bin_edges[:-1], 'left'), \
-                sa.searchsorted(self.bin_edges[-1], 'right')]
-        self.bin_number = np.diff(self.bin_index)
+        self.bin_number = np.array(np.histogram(self.maskedmatrix, self.bin_edges)[0], dtype=float)
         self.bin_number[self.bin_number<=0] = 1
-        return self.ind, self.bin_index
+        return self.bin_number
     
     def intensity(self, pic):
         '''
         2D to 1D image integration, intensity of pixels are binned and then take average,
-        if self.selfcorrenable is True, then pixels whose intensity are too high/low will be dropped.
-        
-        self.ind, self.indlow, self.indhigh should be calculated first
-        uncertainty will be calculated if self.unceratintyenable=True
-        
+                
         :param pic: 2D array, array of raw counts, raw counts should be corrected
-        :param picvar: 2D array, variance of raw counts, if None but required in calculation, use zero matrix instead.
         
         :retrun: 2d array, [tthorq, intensity, unceratinty] or [tthorq, intensity]
         '''
@@ -126,19 +118,27 @@ class Calculate(object):
         return rv
 
     def calculateIntensity(self, pic):
-        spic = pic.ravel()[self.ind]
-        cw = np.concatenate(([0,], spic.cumsum()))
-        intensity = cw[self.bin_index]
-        intensity = np.diff(intensity)/self.bin_number
-        return intensity
+        '''
+        calculate the 1D intensity
+         
+        :param pic: 2D array, array of raw counts, raw counts should be corrected
+        
+        :retrun: 1d array, 1D integrated intensity
+        '''
+        intensity = np.histogram(self.maskedmatrix, self.bin_edges, weights=pic)[0]
+        return intensity/self.bin_number
     
     def calculateVariance(self, pic):
+        '''
+        calculate the 1D intensity
+         
+        :param pic: 2D array, array of raw counts, raw counts should be corrected
+        
+        :retrun: 1d array, variance of integrated intensity
+        '''
         picvar = self.calculateVarianceLocal(pic)
-        svar = picvar.ravel()[self.ind]
-        cw1 = np.concatenate(([0,], svar.cumsum()))
-        variance = cw1[self.bin_index]
-        variance = np.diff(variance)/self.bin_number
-        return variance
+        variance = np.histogram(self.maskedmatrix, self.bin_edges, weights=picvar)[0]
+        return variance/self.bin_number
     
     def calculateVarianceLocal(self, pic):
         '''

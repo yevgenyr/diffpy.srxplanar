@@ -9,7 +9,7 @@
 # File coded by:    Xiaohao Yang
 #
 # See AUTHORS.txt for a list of people who contributed.
-# See LICENSENOTICE.txt for license information.
+# See LICENSE.txt for license information.
 #
 ##############################################################################
 
@@ -269,14 +269,9 @@ class SrXplanarConfig(ConfigBase):
         load fit2d config if specified in config, and set nocalculatio flag when create 
         config or create mask
         
-        :param nofit2d: boolean, if True, it will skip loading fit2d calibration, this is useful
-            when you reload/update some parameters but don't want to reload fit2d calibration 
-            results.
         :param kwargs: optional kwargs
         '''
-        '''if not nofit2d:
-            self._loadFromFit2D(self.fit2dconfig)'''
-        
+
         self._loadFromFit2D(self.fit2dconfig)
         if (self.createconfig!='')and(self.createconfig!=None):
             self.nocalculation = True
@@ -290,6 +285,8 @@ class SrXplanarConfig(ConfigBase):
         '''
         load parameters from fit2d calibration information. copy/paste the fit2d calibration 
         results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
+        
+        :param filename: file name of fit2d result file
         '''
         rv = parseFit2D(filename)
         if len(rv.values())>0:

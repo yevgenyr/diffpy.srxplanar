@@ -9,7 +9,7 @@
 # File coded by:    Xiaohao Yang
 #
 # See AUTHORS.txt for a list of people who contributed.
-# See LICENSENOTICE.txt for license information.
+# See LICENSE.txt for license information.
 #
 ##############################################################################
 
@@ -91,7 +91,7 @@ class Mask(object):
         create a dynamic mask according to image array. This mask changes for different images
         
         :param pic: 2d array, image array to be processed
-        :param addmask: list of string, ['deadpixel', 'brightpixel']  
+        :param addmask: list of string, ['deadpixel', 'brightpixel']
             deadpixel: pixels with much lower intensity compare to adjacent pixels will be masked
             brightpixel: pixels with much higher intensity compare to adjacent pixels will be masked 
              

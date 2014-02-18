@@ -9,7 +9,7 @@
 # File coded by:    Xiaohao Yang
 #
 # See AUTHORS.txt for a list of people who contributed.
-# See LICENSENOTICE.txt for license information.
+# See LICENSE.txt for license information.
 #
 ##############################################################################
 
@@ -18,14 +18,5 @@ from diffpy.srxplanar.version import __version__
 
 # some convenience imports
 from diffpy.confutils.config import ConfigBase, ConfigBase
-
-# unit tests
-def test():
-    '''Execute all unit tests for the diffpy.pdfgetx package.
-    Return a unittest TestResult object.
-    '''
-    from diffpy.confutils.tests import test
-    return test()
-
 
 # End of file
