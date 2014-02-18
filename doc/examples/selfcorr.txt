@@ -1,1 +1,0 @@
-There are some spot in the image so that there are some 'extra' peaks when integrated in Fit2D without masking them. SrXplanar can mask this spot automatically by set selfcorrenable to True (default value).
