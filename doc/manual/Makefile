@@ -5,16 +5,16 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
-BUILDDIR      = _build
+BUILDDIR      = build
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
-ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
+ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 # the i18n builder cannot share the environment and doctrees with the others
-I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
+I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
-.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
+.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext publish
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -77,17 +77,17 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/diffpysrxplanar.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/Structure.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/diffpysrxplanar.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/Structure.qhc"
 
 devhelp:
 	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/diffpysrxplanar"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/diffpysrxplanar"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/Structure"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/Structure"
 	@echo "# devhelp"
 
 epub:
@@ -151,3 +151,29 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
+
+# Manual publishing to the gh-pages branch
+
+GITREPOPATH = $(shell cd $(CURDIR) && git rev-parse --git-dir)
+GITREMOTE = origin
+GITREMOTEURL = $(shell git config --get remote.$(GITREMOTE).url)
+GITLASTCOMMIT = $(shell git rev-parse HEAD)
+
+publish:
+	@test -d build/html || \
+	    ( echo >&2 "Run 'make html' first!"; false )
+	git show-ref --verify --quiet refs/heads/gh-pages || \
+	    git branch --track gh-pages $(GITREMOTE)/gh-pages
+	test -d build/gh-pages || \
+	    git clone -b gh-pages $(GITREPOPATH) build/gh-pages
+	cd build/gh-pages && \
+	    git pull $(GITREMOTEURL) gh-pages
+	rsync -acv --delete --exclude=.git --exclude=.rsync-exclude \
+	    --exclude-from=build/gh-pages/.rsync-exclude \
+	    --link-dest=$(CURDIR)/build/html build/html/ build/gh-pages/
+	cd build/gh-pages && \
+	    git add --all . && \
+	    git diff --cached --quiet || \
+	    git commit -m "Synced with the source at $(GITLASTCOMMIT)."
+	cd build/gh-pages && \
+	    git push origin gh-pages

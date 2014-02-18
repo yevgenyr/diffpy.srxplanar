@@ -16,7 +16,6 @@ from setuptools import setup, find_packages
 MYDIR = os.path.dirname(os.path.abspath(__file__))
 versioncfgfile = os.path.join(MYDIR, 'diffpy/srxplanar/version.cfg')
 
-
 def gitinfo():
     from subprocess import Popen, PIPE
     kw = dict(stdout=PIPE, cwd=MYDIR)
@@ -29,11 +28,10 @@ def gitinfo():
     rv['commit'], rv['timestamp'], rv['date'] = glog.strip().split(None, 2)
     return rv
 
-
-def getversioncfg():
+def getversioncfg(config=versioncfgfile):
     from ConfigParser import SafeConfigParser
     cp = SafeConfigParser()
-    cp.read(versioncfgfile)
+    cp.read(config)
     gitdir = os.path.join(MYDIR, '.git')
     if not os.path.isdir(gitdir):  return cp
     d = cp.defaults()
@@ -43,10 +41,13 @@ def getversioncfg():
         cp.set('DEFAULT', 'commit', g['commit'])
         cp.set('DEFAULT', 'date', g['date'])
         cp.set('DEFAULT', 'timestamp', g['timestamp'])
-        cp.write(open(versioncfgfile, 'w'))
+        cp.write(open(config, 'w'))
     return cp
 
-versiondata = getversioncfg()
+# generate version.cfg for diffpy.confutils
+versioncfgfile1 = os.path.join(MYDIR, 'diffpy/confutils/version.cfg')
+getversioncfg(versioncfgfile1)
+versiondata = getversioncfg(versioncfgfile)
 
 # define distribution
 setup_args = dict(

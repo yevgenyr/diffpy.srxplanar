@@ -1,33 +1,21 @@
-diffpy.srxplanar
+Installation
+========================================================================
 
-diffpy.srxplanar package provides 2D diffraction image integration using
-non splitting pixel algorithm. And it can estimate and propagate statistic
-uncertainty of raw counts and integrated intensity. If you are using this 
-software. If you use this program to do productive scientific research that 
-leads to publication, we kindly ask that you acknowledge use of the program 
-by citing the following paper in your publication:
+.. index:: Software requirements
 
-    Xiaohao Yang, Pavol Juhas, Simon J. L. Billinge, On the estimation of 
-    statistical uncertainties on powder diffraction and small angle 
-    scattering data from 2-D x-ray detectors, arXiv:1309.3614 
-
-To learn more about diffpy.srxplanar library, see the examples directory
-included in this distribution or the API documentation at
-
-    http://diffpy.github.io/doc/srxplanar/
-
-REQUIREMENTS
+Software requirements
+------------------------------------------------------------------------
 
 The diffpy.srxplanar requires Python 2.6 or 2.7 and the following software:
 
-    setuptools	>=0.61(https://pypi.python.org/pypi/setuptools)
-    numpy       >=1.60(http://www.numpy.org/)
-    scipy		>=1.10(www.scipy.org/)
-    FabIO		>=0.80(http://sourceforge.net/projects/fable/files/fabio/)
+* setuptools	>=0.61(https://pypi.python.org/pypi/setuptools)
+* numpy       >=1.60(http://www.numpy.org/)
+* scipy		>=1.10(www.scipy.org/)
+* FabIO		>=0.80(http://sourceforge.net/projects/fable/files/fabio/)
 
 If your python version < 2.7 (these two packages are included in 2.7 but not in 2.6)
-	ordereddict	(https://pypi.python.org/pypi/ordereddict)
-	argparse	(https://pypi.python.org/pypi/argparse)
+* ordereddict	(https://pypi.python.org/pypi/ordereddict)
+* argparse	(https://pypi.python.org/pypi/argparse)
 
 On Ubuntu Linux the part of required software can be easily installed using
 the system package manager:
@@ -54,7 +42,10 @@ system.
 
 For other packages, please go to the webpage list above to download and install. 
 
-INSTALLATION
+.. index:: SrXplanar installation
+
+SrXplanar installation
+------------------------------------------------------------------------
 
 To install the diffpy.srxplanar package:
 
@@ -79,12 +70,6 @@ rather than copied to a system directory, use
 
     python setup.py develop --user
 
-CONTACTS
+.. rubric:: Footnotes
 
-For more information on diffpy.srxplanar please visit the project web-page:
-
-    http://www.diffpy.org/
-
-or email Prof. Simon Billinge at sb2896@columbia.edu
-
-
+.. [#fpy3] Python 3 is not supported yet.

@@ -92,7 +92,6 @@ class SrXplanar(object):
             #dymask = self.staticmask
             self.calculate.genIntegrationInds(dymask)
             chi = self.calculate.intensity(image)
-            np.save('chi', chi)
             index = np.rint(self.calculate.tthorqmatrix / self.config.tthorqstep).astype(int)
             index[index>=len(chi[1])] = len(chi[1]-1)
             avgimage = chi[1][index.ravel()].reshape(index.shape)
