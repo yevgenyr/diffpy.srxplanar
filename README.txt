@@ -14,7 +14,7 @@ by citing the following paper in your publication:
 To learn more about diffpy.srxplanar library, see the examples directory
 included in this distribution or the API documentation at
 
-    http://diffpy.github.io/doc/srxplanar/
+    http://diffpy.github.io/srxplanar/
 
 REQUIREMENTS
 
