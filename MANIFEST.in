@@ -1,5 +1,0 @@
-recursive-include diffpy *
-include AUTHORS.txt LICENSE.txt README.txt
-include setup.cfg
-exclude MANIFEST.in
-recursive-exclude diffpy *.pyc
