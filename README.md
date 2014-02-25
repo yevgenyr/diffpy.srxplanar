@@ -34,25 +34,19 @@ If your python version < 2.7 (these two packages are included in 2.7 but not in 
 On Ubuntu Linux the part of required software can be easily installed using
 the system package manager:
 
-```
-sudo aptitude install \
-    python-setuptools python-numpy python-scipy
-```
+    sudo aptitude install \
+        python-setuptools python-numpy python-scipy
         
 For Mac OS X machine with the MacPorts package manager one could do
 
-```
-sudo port install \
-    python27 py27-setuptools py27-numpy py27-scipy
-```
+    sudo port install \
+        python27 py27-setuptools py27-numpy py27-scipy
 
 When installing with MacPorts, make sure the MacPorts bin directory is the
 first in the system PATH and that python27 is selected as the default
 Python version in MacPorts:
 
-```
-sudo port select --set python python27
-```
+    sudo port select --set python python27
     
 For other Linux distributions use their respective package manager; note
 the packages may have slightly different names. diffpy.srxplanar should work
@@ -66,9 +60,7 @@ For other packages, please go to the webpage list above to download and install.
 
 To install the diffpy.srxplanar package:
 
-```
-python setup.py install
-```
+    python setup.py install
 
 By default the files are installed in the system directories, which are
 usually only writeable by the root.  See the usage info 
@@ -87,9 +79,7 @@ Feel free to fork the project and contribute.  To install diffpy.srxplanar
 in a development mode, where the sources are directly used by Python
 rather than copied to a system directory, use
 
-```
-python setup.py develop --user
-```
+    python setup.py develop --user
 
 ## CONTACTS
 
