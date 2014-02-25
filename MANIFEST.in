@@ -1,5 +1,5 @@
 recursive-include diffpy *
-include AUTHORS.txt LICENSE.txt README.txt
+include AUTHORS.txt LICENSE.txt README.md
 include setup.cfg
 exclude MANIFEST.in
 recursive-exclude diffpy *.pyc
