@@ -1,4 +1,4 @@
-#diffpy.srxplanar
+diffpy.srxplanar
 ========================================================================
 
 diffpy.srxplanar package provides 2D diffraction image integration using
