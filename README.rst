@@ -1,4 +1,5 @@
 #diffpy.srxplanar
+========================================================================
 
 diffpy.srxplanar package provides 2D diffraction image integration using
 non splitting pixel algorithm. And it can estimate and propagate statistic
@@ -11,13 +12,13 @@ by citing the following paper in your publication:
 statistical uncertainties on powder diffraction and small angle 
 scattering data from 2-D x-ray detectors, arXiv:1309.3614 
 
-
 To learn more about diffpy.srxplanar library, see the examples directory
 included in this distribution or the API documentation at
 
 http://diffpy.github.io/diffpy.srxplanar/
 
-## REQUIREMENTS
+REQUIREMENTS
+------------------------------------------------------------------------
 
 The diffpy.srxplanar requires Python 2.6 or 2.7 and the following software:
 
@@ -32,19 +33,19 @@ If your python version < 2.7 (these two packages are included in 2.7 but not in 
 * `argparse`    https://pypi.python.org/pypi/argparse
 
 On Ubuntu Linux the part of required software can be easily installed using
-the system package manager:
+the system package manager::
 
     sudo aptitude install \
         python-setuptools python-numpy python-scipy
         
-For Mac OS X machine with the MacPorts package manager one could do
+For Mac OS X machine with the MacPorts package manager one could do::
 
     sudo port install \
         python27 py27-setuptools py27-numpy py27-scipy
 
 When installing with MacPorts, make sure the MacPorts bin directory is the
 first in the system PATH and that python27 is selected as the default
-Python version in MacPorts:
+Python version in MacPorts::
 
     sudo port select --set python python27
     
@@ -56,9 +57,11 @@ system.
 
 For other packages, please go to the webpage list above to download and install. 
 
-## INSTALLATION
 
-To install the diffpy.srxplanar package:
+INSTALLATION
+------------------------------------------------------------------------
+
+To install the diffpy.srxplanar package::
 
     python setup.py install
 
@@ -68,7 +71,8 @@ usually only writeable by the root.  See the usage info
 different location.  Note that installation to non-standard directories may
 require adjustments to the PATH and PYTHONPATH environment variables.
 
-## DEVELOPMENT and CONTRIBUTION
+DEVELOPMENT
+------------------------------------------------------------------------
 
 diffpy.srxplanar is an open-source software developed at the Columbia University
 The diffpy.srxplanar sources are hosted at
@@ -77,11 +81,12 @@ https://github.com/diffpy/diffpy.srxplanar
 
 Feel free to fork the project and contribute.  To install diffpy.srxplanar
 in a development mode, where the sources are directly used by Python
-rather than copied to a system directory, use
+rather than copied to a system directory, use::
 
     python setup.py develop --user
 
-## CONTACTS
+CONTACTS
+------------------------------------------------------------------------
 
 For more information on diffpy.srxplanar please visit the project web-page:
 
