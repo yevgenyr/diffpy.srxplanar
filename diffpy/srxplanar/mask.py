@@ -41,7 +41,7 @@ class Mask(object):
         self.config = p
         return
     
-    def staticMask(self, addmask = None):
+    def staticMask(self, addmask=None):
         '''
         create a static mask according existing mask file. This mask remain unchanged for different images
         
@@ -53,40 +53,40 @@ class Mask(object):
         
         :return: 2d array of boolean, 1 stands for masked pixel
         '''
-        addmask = self.addmask if addmask==None else addmask
+        addmask = self.addmask if addmask == None else addmask
         
         rv = np.zeros((self.ydimension, self.xdimension))
-        #fit2d mask
+        # fit2d mask
         maskfit2ds = filter(lambda msk: msk.endswith('.msk'), addmask)
-        if len(maskfit2ds)>0:
+        if len(maskfit2ds) > 0:
             for maskfit2d in maskfit2ds:
                 if os.path.exists(maskfit2d):
                     immask = fabio.openimage.openimage(maskfit2d)
-                    #rv += self.flipImage(immask.data)
+                    # rv += self.flipImage(immask.data)
                     rv += immask.data
-        #.npy mask
+        # .npy mask
         npymasks = filter(lambda msk: msk.endswith('.npy'), addmask)
-        if len(npymasks)>0:
+        if len(npymasks) > 0:
             for npymask in npymasks:
                 if os.path.exists(npymask):
                     rv += np.load(npymask)
-        #.tif mask
+        # .tif mask
         tifmasks = filter(lambda msk: msk.endswith('.tif'), addmask)
-        if len(tifmasks)>0:
+        if len(tifmasks) > 0:
             for tifmask in tifmasks:
                 if os.path.exists(tifmask):
                     immask = fabio.openimage.openimage(tifmask)
                     rv += self.flipImage(immask.data)
-        #edge mask 
+        # edge mask 
         edgemask = filter(lambda msk: msk.startswith('edge'), addmask)
-        if len(edgemask)>0:
-            if np.sum(self.maskedges)!=0:
+        if len(edgemask) > 0:
+            if np.sum(self.maskedges) != 0:
                 rv += self.edgeMask(self.maskedges)
         
         self.staticmask = (rv > 0)
         return self.staticmask
     
-    def dynamicMask(self, pic, addmask = None):
+    def dynamicMask(self, pic, addmask=None):
         '''
         create a dynamic mask according to image array. This mask changes for different images
         
@@ -98,22 +98,22 @@ class Mask(object):
         :return: 2d array of boolean, 1 stands for masked pixel
         '''
         
-        addmask = self.addmask if addmask==None else addmask
+        addmask = self.addmask if addmask == None else addmask
         rv = np.zeros((self.ydimension, self.xdimension))
         flag = False
-        #deadpixel mask
+        # deadpixel mask
         dpmask = filter(lambda msk: msk.startswith('dead'), addmask)
-        if len(dpmask)>0:
+        if len(dpmask) > 0:
             rv += self.deadPixelMask(pic)
             flag = True
-        #bright pixel mask
+        # bright pixel mask
         bpmask = filter(lambda msk: msk.startswith('bright'), addmask)
-        if len(bpmask)>0:
+        if len(bpmask) > 0:
             rv += self.brightPixelMask(pic)
             flag = True
-        #return None if none mask applied
+        # return None if none mask applied
         if flag:
-            self.dynamicmask = (rv>0)
+            self.dynamicmask = (rv > 0)
         else:
             self.dynamicmask = None
         return self.dynamicmask
@@ -127,14 +127,14 @@ class Mask(object):
         :return: 2d array of boolean, 1 stands for masked pixel
         '''
         avgpic = np.average(pic)
-        ks = np.ones((5,5))
-        ks1 = np.ones((7,7))
-        picb = snf.percentile_filter(pic, 5, 3) < avgpic/10
+        ks = np.ones((5, 5))
+        ks1 = np.ones((7, 7))
+        picb = snf.percentile_filter(pic, 5, 3) < avgpic / 10
         picb = snm.binary_dilation(picb, structure=ks)
         picb = snm.binary_erosion(picb, structure=ks1)
         return picb
     
-    def brightPixelMask(self, pic, size=5, r = 1.2):
+    def brightPixelMask(self, pic, size=5, r=1.2):
         '''
         pixels with much higher intensity compare to adjacent pixels will be masked,
         this mask is used when there are some bright spots/pixels whose intensity is higher 
@@ -152,7 +152,7 @@ class Mask(object):
         :return: 2d array of boolean, 1 stands for masked pixel
         '''
         rank = snf.rank_filter(pic, -size, size)
-        ind = snm.binary_dilation(pic>rank*r, np.ones((3,3)))
+        ind = snm.binary_dilation(pic > rank * r, np.ones((3, 3)))
         return ind
     
     def edgeMask(self, edges=None):
@@ -164,27 +164,27 @@ class Mask(object):
         
         :return: 2d array of boolean, 1 stands for masked pixel
         '''
-        edges = self.maskedges if edges==None else edges
+        edges = self.maskedges if edges == None else edges
         rv = np.zeros((self.ydimension, self.xdimension))
-        if edges[0]!=0:
-            rv[:,:edges[0]] = 1
-        if edges[1]!=0:
-            rv[:,-edges[1]:] = 1
-        if edges[2]!=0:
-            rv[-edges[2]:,:] = 1
-        if edges[3]!=0:
-            rv[:edges[3]:,:] = 1
+        if edges[0] != 0:
+            rv[:, :edges[0]] = 1
+        if edges[1] != 0:
+            rv[:, -edges[1]:] = 1
+        if edges[2] != 0:
+            rv[:edges[2], :] = 1
+        if edges[3] != 0:
+            rv[-edges[3]::, :] = 1
         
         ra = edges[4]
-        ball = np.zeros((ra*2, ra*2))
-        radi = (np.arange(ra*2)-ra).reshape((1, ra*2))**2 + \
-                (np.arange(ra*2)-ra).reshape((ra*2, 1)) ** 2
+        ball = np.zeros((ra * 2, ra * 2))
+        radi = (np.arange(ra * 2) - ra).reshape((1, ra * 2)) ** 2 + \
+                (np.arange(ra * 2) - ra).reshape((ra * 2, 1)) ** 2
         radi = np.sqrt(radi)
         ind = radi > ra
-        rv[edges[3]:edges[3]+ra, edges[0]:edges[0]+ra] = ind[:ra,:ra]
-        rv[edges[3]:edges[3]+ra, -edges[1]-ra:-edges[1]] = ind[:ra,-ra:]
-        rv[-edges[2]-ra:-edges[2], edges[0]:edges[0]+ra] = ind[-ra:, :ra]
-        rv[-edges[2]-ra:-edges[2], -edges[1]-ra:-edges[1]] = ind[-ra:,-ra:]
+        rv[-edges[3] - ra:-edges[3], edges[0]:edges[0] + ra] = ind[-ra:, :ra]
+        rv[-edges[3] - ra:-edges[3], -edges[1] - ra:-edges[1]] = ind[-ra:, -ra:]
+        rv[edges[2]: edges[2] + ra, edges[0]:edges[0] + ra] = ind[:ra, :ra]
+        rv[edges[2]: edges[2] + ra, -edges[1] - ra:-edges[1]] = ind[:ra, -ra:]
         return rv
     
     def undersample(self, undersamplerate):
@@ -207,9 +207,9 @@ class Mask(object):
         :return: 2d array, flipped image array
         '''
         if self.fliphorizontal:
-            pic = pic[:,::-1]
+            pic = pic[:, ::-1]
         if self.flipvertical:
-            pic = pic[::-1,:]
+            pic = pic[::-1, :]
         return pic
     
     def saveMask(self, filename, pic=None, addmask=None):
@@ -226,11 +226,11 @@ class Mask(object):
         '''
         if not hasattr(self, 'mask'):
             self.normalMask(addmask)
-        if (not hasattr(self, 'dynamicmask')) and (pic!=None):
+        if (not hasattr(self, 'dynamicmask')) and (pic != None):
             self.dynamicMask(pic, addmask=addmask)
         tmask = self.mask
         if hasattr(self, 'dynamicmask'):
-            if self.dynamicmask!=None:
-                tmask = np.logical_or(self.mask, self.dynamicmask) if pic!=None else self.mask
+            if self.dynamicmask != None:
+                tmask = np.logical_or(self.mask, self.dynamicmask) if pic != None else self.mask
         np.save(filename, tmask)
         return tmask

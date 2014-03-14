@@ -62,8 +62,8 @@ class Calculate(object):
         self.xr = (np.arange(self.xdimension, dtype=float) - self.xbeamcenter + 0.5) * self.xpixelsize
         self.yr = (np.arange(self.ydimension, dtype=float) - self.ybeamcenter + 0.5) * self.ypixelsize
         self.dmatrix = self.genDistanceMatrix()
-        self.azimuthmatrix = np.arctan2(self.yr.reshape(self.ydimension,1), 
-                                        self.xr.reshape(1,self.xdimension))
+        self.azimuthmatrix = np.arctan2(self.yr.reshape(self.ydimension, 1),
+                                        self.xr.reshape(1, self.xdimension))
         self.genTTHorQMatrix()
         return
     
@@ -72,14 +72,14 @@ class Calculate(object):
         generate a twotheta matrix or q matrix which stores the tth or q value
         or each pixel
         '''
-        #set tth or q grid
+        # set tth or q grid
         if self.integrationspace == 'twotheta':
-            self.bin_edges = np.r_[0, np.arange(self.tthstep/2, self.tthmax, self.tthstep)]
-            self.xgrid = np.degrees(self.bin_edges[1:] - self.tthstep/2)
+            self.bin_edges = np.r_[0, np.arange(self.tthstep / 2, self.tthmax, self.tthstep)]
+            self.xgrid = np.degrees(self.bin_edges[1:] - self.tthstep / 2)
             self.tthorqmatrix = self.genTTHMatrix()
         elif self.integrationspace == 'qspace':
-            self.bin_edges = np.r_[0, np.arange(self.qstep/2, self.qmax, self.qstep)]
-            self.xgrid = self.bin_edges[1:] - self.qstep/2
+            self.bin_edges = np.r_[0, np.arange(self.qstep / 2, self.qmax, self.qstep)]
+            self.xgrid = self.bin_edges[1:] - self.qstep / 2
             self.tthorqmatrix = self.genQMatrix()
         return
     
@@ -97,7 +97,7 @@ class Calculate(object):
         self.maskedmatrix[mask] = 1000.0
         
         self.bin_number = np.array(np.histogram(self.maskedmatrix, self.bin_edges)[0], dtype=float)
-        self.bin_number[self.bin_number<=0] = 1
+        self.bin_number[self.bin_number <= 0] = 1
         return self.bin_number
     
     def intensity(self, pic):
@@ -125,8 +125,9 @@ class Calculate(object):
         
         :retrun: 1d array, 1D integrated intensity
         '''
+
         intensity = np.histogram(self.maskedmatrix, self.bin_edges, weights=pic)[0]
-        return intensity/self.bin_number
+        return intensity / self.bin_number
     
     def calculateVariance(self, pic):
         '''
@@ -138,7 +139,7 @@ class Calculate(object):
         '''
         picvar = self.calculateVarianceLocal(pic)
         variance = np.histogram(self.maskedmatrix, self.bin_edges, weights=picvar)[0]
-        return variance/self.bin_number
+        return variance / self.bin_number
     
     def calculateVarianceLocal(self, pic):
         '''
@@ -151,10 +152,10 @@ class Calculate(object):
         '''
         
         picavg = snf.uniform_filter(pic, 5, mode='wrap')
-        pics2 = (pic - picavg)**2
-        pvar = snf.uniform_filter(pics2, 5, mode = 'wrap')       
+        pics2 = (pic - picavg) ** 2
+        pvar = snf.uniform_filter(pics2, 5, mode='wrap')       
         
-        gain = pvar/pic
+        gain = pvar / pic
         gain[np.isnan(gain)] = 0
         gain[np.isinf(gain)] = 0
         gainmedian = np.median(gain)
@@ -197,7 +198,7 @@ class Calculate(object):
         sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
         
-        tthmatrix1 = np.zeros((self.ydimension,self.xdimension), dtype=float)
+        tthmatrix1 = np.zeros((self.ydimension, self.xdimension), dtype=float)
         tthmatrix1 += ((-self.xr + sourcexr) * sourcexr).reshape(1, self.xdimension)
         tthmatrix1 += ((-self.yr + sourceyr) * sourceyr).reshape(self.ydimension, 1)
         tthmatrix1 += sourcezr * sourcezr
@@ -218,7 +219,7 @@ class Calculate(object):
         sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
         
-        tthmatrix1 = np.zeros((self.ydimension,self.xdimension), dtype=float)
+        tthmatrix1 = np.zeros((self.ydimension, self.xdimension), dtype=float)
         tthmatrix1 += ((-self.xr + sourcexr) * sourcexr).reshape(1, self.xdimension)
         tthmatrix1 += ((-self.yr + sourceyr) * sourceyr).reshape(self.ydimension, 1)
         tthmatrix1 += sourcezr * sourcezr
@@ -259,9 +260,9 @@ class Calculate(object):
         if self.polcorrectionenable:
             tthmatrix = self.tthorqmatrix if self.integrationspace == 'twotheta' else self.genTTHMatrix() 
             azimuthmatrix = self.azimuthmatrix
-            p = 0.5 * (1 + (np.cos(tthmatrix))**2)
-            p1 = 0.5 * self.polcorrectf * np.cos(2*azimuthmatrix) *  (np.sin(tthmatrix))**2
-            p = 1.0 / (p-p1)
+            p = 0.5 * (1 + (np.cos(tthmatrix)) ** 2)
+            p1 = 0.5 * self.polcorrectf * np.cos(2 * azimuthmatrix) * (np.sin(tthmatrix)) ** 2
+            p = 1.0 / (p - p1)
         else:
             p = np.ones((self.ydimension, self.xdimension))
         return p

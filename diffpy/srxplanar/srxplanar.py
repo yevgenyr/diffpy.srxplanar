@@ -20,7 +20,7 @@ srxplanar main modular
 import numpy as np
 import scipy.sparse as ssp
 import os, sys
-#import time
+# import time
 
 from diffpy.srxplanar.srxplanarconfig import SrXplanarConfig
 from diffpy.srxplanar.calculate import Calculate
@@ -32,7 +32,7 @@ class SrXplanar(object):
     '''
     main modular for srxplanar
     '''
-    
+
     def __init__(self, srxplanarconfig=None, configfile=None, args=None, **kwargs):
         '''
         init srxplanar form a SrXplanarConfig instance, or config file, or args passed from cmd
@@ -44,18 +44,18 @@ class SrXplanar(object):
         :param args: list of str, usually be sys.argv
         :param kwargs: you can use like 'xbeamcenter=1024' or a dict to update the value of xbeamcenter
         '''
-        if srxplanarconfig!=None:
+        if srxplanarconfig != None:
             self.config = srxplanarconfig
             self.config.updateConfig(filename=configfile, args=args, **kwargs)
         else:
             self.config = SrXplanarConfig(filename=configfile, args=args, **kwargs)
-        #init modulars
+        # init modulars
         self.mask = Mask(self.config)
         self.loadimage = LoadImage(self.config)
         self.calculate = Calculate(self.config)
         self.saveresults = SaveResults(self.config)
         return
-    
+
     def updateConfig(self, filename=None, args=None, **kwargs):
         '''
         update config using configfile/args/kwargs, then rerun all prepareCalculation()
@@ -67,11 +67,11 @@ class SrXplanar(object):
         :return: None
         '''
         self.config.updateConfig(filename=filename, args=args, **kwargs)
-        #update instances
+        # update instances
         self.calculate.prepareCalculation()
         self.saveresults.prepareCalculation()
         return
-        
+
     def prepareCalculation(self, pic=None):
         '''
         prepare data used in calculation
@@ -83,36 +83,45 @@ class SrXplanar(object):
         '''
         self.staticmask = self.mask.staticMask()
         self.correction = self.calculate.genCorrectionMatrix()
-        # if a pic is provided, then generate one-time dynamicmask 
+        # if a pic is provided, then generate one-time dynamicmask
         if pic != None:
             image = self._getPic(pic)
             image *= self.correction
-            dymask = self.mask.dynamicMask(image, addmask = ['dead', 'bright'])
+            dymask = self.mask.dynamicMask(image, addmask=['dead', 'bright'])
             dymask = np.logical_or(self.staticmask, dymask)
-            #dymask = self.staticmask
+            # dymask = self.staticmask
             self.calculate.genIntegrationInds(dymask)
             chi = self.calculate.intensity(image)
             index = np.rint(self.calculate.tthorqmatrix / self.config.tthorqstep).astype(int)
-            index[index>=len(chi[1])] = len(chi[1]-1)
+            index[index >= len(chi[1])] = len(chi[1] - 1)
             avgimage = chi[1][index.ravel()].reshape(index.shape)
-            mask = np.logical_or(image<avgimage*0.5, image>avgimage*2.0)
+            mask = np.logical_or(image < avgimage * 0.5, image > avgimage * 2.0)
             self.staticmask = np.logical_or(np.logical_or(self.staticmask, mask), dymask)
-        
+
         self.calculate.genIntegrationInds(self.staticmask)
         return
-    
-    def _picChanged(self):
+
+    def _picChanged(self, extramask=None):
         '''
         update all pic related data (such as dynamic mask) when a new image is read
+        
+        :param extramask: 2d array, extra mask applied in integration
         
         :return: None
         '''
         dynamicmask = self.mask.dynamicMask(self.pic)
+
         if dynamicmask != None:
             mask = np.logical_or(self.staticmask, dynamicmask)
+            if extramask != None:
+                mask = np.logical_or(mask, extramask)
+        elif extramask != None:
+            mask = np.logical_or(self.staticmask, extramask)
+
+        if (dynamicmask != None) or (extramask != None):
             self.calculate.genIntegrationInds(mask)
         return
-    
+
     def _getSaveFileName(self, imagename=None, filename=None):
         '''
         get the save file name, the priority order is self.output> filename> imagename > 'output'(default name)
@@ -123,14 +132,14 @@ class SrXplanar(object):
         :return: string, name of file to be saved 
         '''
         rv = 'output'
-        if self.config.output!=None and self.config.output!='':
+        if self.config.output != None and self.config.output != '':
             rv = self.config.output
-        elif filename!=None:
+        elif filename != None:
             rv = filename
-        elif imagename!=None and isinstance(imagename, (str, unicode)):
+        elif imagename != None and isinstance(imagename, (str, unicode)):
             rv = imagename
         return rv
-    
+
     def _getPic(self, image, flip=True):
         '''
         load picture to 2d array
@@ -156,9 +165,10 @@ class SrXplanar(object):
             rv = self.loadimage.flipImage(image)
         else:
             rv = image
-        return rv
-    
-    def integrate(self, image, savename=None, savefile=True, flip=True):
+        rv = rv * self.correction
+        return rv.astype(float)
+
+    def integrate(self, image, savename=None, savefile=True, flip=True, extramask=None):
         '''
         integrate 2d image to 1d diffraction pattern, then save to disk
         
@@ -168,7 +178,8 @@ class SrXplanar(object):
         :param savename: str, name of file to save
         :param savefile: boolean, if True, save file to disk, if False, do not save file to disk
         :param flip: boolean, if True and 'image' is a 2d array, flip this array and integrate it
-            if False and 'image' is a 2d array, directly integrate it. 
+            if False and 'image' is a 2d array, directly integrate it.
+        :param extramask: 2d array, extra mask applied in integration 
         
         :return: dict, rv['chi'] is a 2d array of integrated intensity, shape is (2, len of intensity) 
             or (3, len of intensity) in [tth or q, intensity, (uncertainty)]. rv['filename'] is the 
@@ -176,16 +187,17 @@ class SrXplanar(object):
         '''
         rv = {}
         self.pic = self._getPic(image, flip)
-        rv['filename'] = self._getSaveFileName(imagename= image, filename=savename)
-        self._picChanged()
-        #calculate
+
+        rv['filename'] = self._getSaveFileName(imagename=image, filename=savename)
+        self._picChanged(extramask=extramask)
+        # calculate
         rv['chi'] = self.chi = self.calculate.intensity(self.pic)
-        #save
+        # save
         if savefile:
             rv['filename'] = self.saveresults.save(rv)
         return rv
-    
-    def integrateFilelist(self, filelist, summation=None, filename=None):
+
+    def integrateFilelist(self, filelist, summation=None, filename=None, extramask=None):
         '''
         process all file in filelist, integrate them separately or together
         
@@ -198,22 +210,22 @@ class SrXplanar(object):
             or (3, len of intensity) as [tth or q, intensity, (uncertainty)]. rv['filename'] is the 
             name of file to save to disk
         '''
-        summation =  self.config.summation if summation == None else summation
-        if (summation)and(len(filelist)>1):
+        summation = self.config.summation if summation == None else summation
+        if (summation)and(len(filelist) > 1):
             image = self._getPic(filelist)
-            filename = os.path.splitext(filelist[-1])[0]+'_sum.chi' if filename == None else filename
-            rv = [self.integrate(image, savename = filename, flip=False)]
+            filename = os.path.splitext(filelist[-1])[0] + '_sum.chi' if filename == None else filename
+            rv = [self.integrate(image, savename=filename, flip=False, extramask=extramask)]
         else:
             i = 0
             rv = []
             for imagefile in filelist:
-                if filename==None:
-                    rvv = self.integrate(imagefile)
+                if filename == None:
+                    rvv = self.integrate(imagefile, extramask=extramask)
                 else:
-                    rvv = self.integrate(imagefile, savename = filename+'%03d'%i)
+                    rvv = self.integrate(imagefile, savename=filename + '%03d' % i, extramask=extramask)
                 rv.append(rvv)
         return rv
-    
+
     def process(self):
         '''
         process the images according to filenames/includepattern/excludepattern/summation
@@ -226,22 +238,22 @@ class SrXplanar(object):
         '''
         if not self.config.nocalculation:
             filelist = self.loadimage.genFileList()
-            if len(filelist)>0:
-                self.prepareCalculation(pic = filelist[0])
+            if len(filelist) > 0:
+                self.prepareCalculation(pic=filelist[0])
                 self.integrateFilelist(filelist)
             else:
                 print 'No input files or configurations'
                 self.config.args.print_help()
-        #mask creating
-        elif self.config.createmask!='':
+        # mask creating
+        elif self.config.createmask != '':
             self.createMask()
-        #if no config is passed to srxplanar
+        # if no config is passed to srxplanar
         else:
             print 'No input files or configurations'
             self.config.args.print_help()
         return
-    
-    def createMask(self, filename= None, pic=None, addmask=None):
+
+    def createMask(self, filename=None, pic=None, addmask=None):
         '''
         create and save a mask according to addmask, pic, 1 stands for masked pixel in saved file
         
@@ -251,25 +263,25 @@ class SrXplanar(object):
         
         :return: 2d array, 1 stands for masked pixel here
         '''
-        filename = self.config.createmask if filename==None else filename
-        filename = 'mask.npy' if filename =='' else filename
-        addmask = self.config.addmask if addmask==None else addmask
+        filename = self.config.createmask if filename == None else filename
+        filename = 'mask.npy' if filename == '' else filename
+        addmask = self.config.addmask if addmask == None else addmask
         if not hasattr(self, 'mask'):
             self.mask = Mask(self.config)
         if not hasattr(self, 'loadimage'):
             self.loadimage = LoadImage(self.config)
-        if pic==None:
+        if pic == None:
             filelist = self.loadimage.genFileList()
             if hasattr(self, 'pic'):
-                if self.pic!=None:
-                    pic =self.pic
+                if self.pic != None:
+                    pic = self.pic
                 else:
-                    pic = self.loadimage.loadImage(filelist[0]) if len(filelist)>0 else None
+                    pic = self.loadimage.loadImage(filelist[0]) if len(filelist) > 0 else None
             else:
-                pic = self.loadimage.loadImage(filelist[0]) if len(filelist)>0 else None
+                pic = self.loadimage.loadImage(filelist[0]) if len(filelist) > 0 else None
         rv = self.mask.saveMask(filename, pic, addmask)
         return rv
-    
+
 
 
 def main():
@@ -280,5 +292,5 @@ def main():
     srxplanar.process()
     return
 
-if __name__=='__main__':
+if __name__ == '__main__':
     sys.exit(main())
