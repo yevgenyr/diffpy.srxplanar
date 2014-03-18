@@ -159,13 +159,16 @@ class SrXplanar(object):
             rv = np.zeros((self.config.ydimension, self.config.xdimension))
             for imagefile in image:
                 rv += self._getPic(imagefile)
+            rv /= len(image)
         elif isinstance(image, (str, unicode)):
             rv = self.loadimage.loadImage(image)
+            rv *= self.correction
         elif flip:
             rv = self.loadimage.flipImage(image)
+            rv *= self.correction
         else:
             rv = image
-        rv = rv * self.correction
+            rv *= self.correction
         return rv.astype(float)
 
     def integrate(self, image, savename=None, savefile=True, flip=True, extramask=None):
