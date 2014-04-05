@@ -28,7 +28,7 @@ class Mask(object):
     static mask: fit2d (.msk) mask, tif mask, npy mask, masking edge pixels, 
     dymanic mask: masking dead pixels, bright pixels
     '''
-    
+
     xdimension = _configPropertyR('xdimension')
     ydimension = _configPropertyR('ydimension')
     fliphorizontal = _configPropertyR('fliphorizontal')
@@ -36,11 +36,11 @@ class Mask(object):
     maskedges = _configPropertyR('maskedges')
     wavelength = _configPropertyR('wavelength')
     addmask = _configPropertyR('addmask')
-    
+
     def __init__(self, p):
         self.config = p
         return
-    
+
     def staticMask(self, addmask=None):
         '''
         create a static mask according existing mask file. This mask remain unchanged for different images
@@ -54,7 +54,7 @@ class Mask(object):
         :return: 2d array of boolean, 1 stands for masked pixel
         '''
         addmask = self.addmask if addmask == None else addmask
-        
+
         rv = np.zeros((self.ydimension, self.xdimension))
         # fit2d mask
         maskfit2ds = filter(lambda msk: msk.endswith('.msk'), addmask)
@@ -77,15 +77,15 @@ class Mask(object):
                 if os.path.exists(tifmask):
                     immask = fabio.openimage.openimage(tifmask)
                     rv += self.flipImage(immask.data)
-        # edge mask 
+        # edge mask
         edgemask = filter(lambda msk: msk.startswith('edge'), addmask)
         if len(edgemask) > 0:
             if np.sum(self.maskedges) != 0:
                 rv += self.edgeMask(self.maskedges)
-        
+
         self.staticmask = (rv > 0)
         return self.staticmask
-    
+
     def dynamicMask(self, pic, addmask=None):
         '''
         create a dynamic mask according to image array. This mask changes for different images
@@ -97,7 +97,7 @@ class Mask(object):
              
         :return: 2d array of boolean, 1 stands for masked pixel
         '''
-        
+
         addmask = self.addmask if addmask == None else addmask
         rv = np.zeros((self.ydimension, self.xdimension))
         flag = False
@@ -117,7 +117,7 @@ class Mask(object):
         else:
             self.dynamicmask = None
         return self.dynamicmask
-    
+
     def deadPixelMask(self, pic):
         '''
         pixels with much lower intensity compare to adjacent pixels will be masked
@@ -133,7 +133,7 @@ class Mask(object):
         picb = snm.binary_dilation(picb, structure=ks)
         picb = snm.binary_erosion(picb, structure=ks1)
         return picb
-    
+
     def brightPixelMask(self, pic, size=5, r=1.2):
         '''
         pixels with much higher intensity compare to adjacent pixels will be masked,
@@ -154,7 +154,7 @@ class Mask(object):
         rank = snf.rank_filter(pic, -size, size)
         ind = snm.binary_dilation(pic > rank * r, np.ones((3, 3)))
         return ind
-    
+
     def edgeMask(self, edges=None):
         '''
         mask the pixels near edge and around corner
@@ -174,7 +174,7 @@ class Mask(object):
             rv[:edges[2], :] = 1
         if edges[3] != 0:
             rv[-edges[3]::, :] = 1
-        
+
         ra = edges[4]
         ball = np.zeros((ra * 2, ra * 2))
         radi = (np.arange(ra * 2) - ra).reshape((1, ra * 2)) ** 2 + \
@@ -186,7 +186,7 @@ class Mask(object):
         rv[edges[2]: edges[2] + ra, edges[0]:edges[0] + ra] = ind[:ra, :ra]
         rv[edges[2]: edges[2] + ra, -edges[1] - ra:-edges[1]] = ind[:ra, -ra:]
         return rv
-    
+
     def undersample(self, undersamplerate):
         '''
         a special mask used for undesampling image. It will create a mask that
@@ -197,7 +197,7 @@ class Mask(object):
         '''
         mask = np.random.rand(self.ydimension, self.xdimension) < undersamplerate
         return mask
-        
+
     def flipImage(self, pic):
         '''
         flip image if configured in config
@@ -211,7 +211,7 @@ class Mask(object):
         if self.flipvertical:
             pic = pic[::-1, :]
         return pic
-    
+
     def saveMask(self, filename, pic=None, addmask=None):
         '''
         generate a mask according to the addmask and pic. save it to .npy. 1 stands for masked pixel

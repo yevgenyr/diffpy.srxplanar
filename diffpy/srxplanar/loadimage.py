@@ -16,7 +16,9 @@
 import time
 import numpy as np
 import fabio, fabio.openimage
-import os,fnmatch, sys
+import os
+import fnmatch
+import sys
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
 class LoadImage(object):
@@ -36,7 +38,7 @@ class LoadImage(object):
     def __init__(self, p):
         self.config = p
         return
-        
+
     def flipImage(self, pic):
         '''
         flip image if configured in config
@@ -46,11 +48,11 @@ class LoadImage(object):
         :return: 2d array, flipped image array
         '''
         if self.fliphorizontal:
-            pic = np.array(pic[:,::-1])
+            pic = np.array(pic[:, ::-1])
         if self.flipvertical:
-            pic = np.array(pic[::-1,:])
+            pic = np.array(pic[::-1, :])
         return pic
-    
+
     def loadImage(self, filename):
         '''
         load image, then subtract the background if configed in self.backgroundpic.
@@ -62,11 +64,11 @@ class LoadImage(object):
         if os.path.exists(filename):
             filenamefull = filename
         else:
-            filenamefull = os.path.join(self.opendirectory,filename)
-        image = np.zeros(10000).reshape(100,100)
+            filenamefull = os.path.join(self.opendirectory, filename)
+        image = np.zeros(10000).reshape(100, 100)
         if os.path.exists(filenamefull):
             i = 0
-            while i<10:
+            while i < 10:
                 try:
                     image = fabio.openimage.openimage(filenamefull)
                     i = 10
@@ -74,9 +76,9 @@ class LoadImage(object):
                     i = i + 1
                     time.sleep(2)
             image = self.flipImage(image.data)
-            image[image<0] = 0
+            image[image < 0] = 0
         return image
-    
+
     def genFileList(self, filenames=None, opendir=None, includepattern=None, excludepattern=None):
         '''
         generate the list of file in opendir according to include/exclude pattern
@@ -94,10 +96,10 @@ class LoadImage(object):
         opendir = self.opendirectory if opendir == None else opendir
         includepattern = self.includepattern if includepattern == None else includepattern
         excludepattern = self.excludepattern if excludepattern == None else excludepattern
-        
+
         fileset = self.genFileSet(filenames, opendir, includepattern, excludepattern)
         return sorted(list(fileset))
-    
+
     def genFileSet(self, filenames=None, opendir=None, includepattern=None, excludepattern=None):
         '''
         generate the list of file in opendir according to include/exclude pattern
@@ -123,7 +125,7 @@ class LoadImage(object):
         for excludep in excludepattern:
             fileset -= set(fnmatch.filter(filelist, excludep))
         # filter the filenames according to filenames
-        if len(filenames)>0:
+        if len(filenames) > 0:
             fileset1 = set()
             for filename in filenames:
                 fileset1 |= set(fnmatch.filter(fileset, filename))

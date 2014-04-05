@@ -23,9 +23,9 @@ def _configPropertyRad(nm):
     '''
     helper function of options delegation, rad to degree
     '''
-    rv = property(fget = lambda self: np.radians(getattr(self, nm)), 
-                  fset = lambda self, val: setattr(self, nm, np.degrees(val)), 
-                  fdel = lambda self: delattr(self, nm))
+    rv = property(fget=lambda self: np.radians(getattr(self, nm)),
+                  fset=lambda self, val: setattr(self, nm, np.degrees(val)),
+                  fdel=lambda self: delattr(self, nm))
     return rv
 
 def _configPropertyR(name):
@@ -34,7 +34,7 @@ def _configPropertyR(name):
     
     read only
     '''
-    rv = property(fget = lambda self: getattr(self.config, name),
+    rv = property(fget=lambda self: getattr(self.config, name),
             doc='attribute forwarded to self.config, read-only')
     return rv
 
@@ -44,9 +44,9 @@ def _configPropertyRW(name):
     
     read and write
     '''
-    rv = property(fget = lambda self: getattr(self.config, nm), 
-                  fset = lambda self, value: setattr(self.config, nm, value),
-                  fdel = lambda self: delattr(self, nm),
+    rv = property(fget=lambda self: getattr(self.config, nm),
+                  fset=lambda self, value: setattr(self.config, nm, value),
+                  fdel=lambda self: delattr(self, nm),
                   doc='attribute forwarded to self.config, read/write')
     return rv
 
@@ -66,7 +66,7 @@ def opt2Str(opttype, optvalue):
     
     :return: string, usually stored in ConfigBase.config
     '''
-    
+
     if opttype.endswith('list'):
         rv = ', '.join(map(str, optvalue))
     else:
@@ -106,11 +106,11 @@ def str2Opt(opttype, optvalue):
     
     :return: value of the option, usually stored in ConfigBase.config
     '''
-    #base converter
+    # base converter
     conv = StrConv(opttype)
     if opttype.endswith('list'):
         temp = re.split('\s*,\s*', optvalue)
-        rv = map(conv, temp) if len(temp)>0 else []
+        rv = map(conv, temp) if len(temp) > 0 else []
     else:
         rv = conv(optvalue)
     return rv
@@ -120,14 +120,14 @@ class FakeConfigFile(object):
     A fake configfile object used in reading config from header of data
     or a real config file. 
     '''
-    def __init__(self, configfile, endline='###Data###'):
+    def __init__(self, configfile, endline='###'):
         self.configfile = configfile
         self.fp = open(configfile)
-        self.endline = '###Data###'
+        self.endline = endline
         self.ended = False
         self.name = configfile
         return
-    
+
     def readline(self):
         '''
         readline function
@@ -139,13 +139,13 @@ class FakeConfigFile(object):
         else:
             rv = line
         return rv
-    
+
     def close(self):
         '''
         close the file
         '''
         self.fp.close()
-        return    
+        return
 
 def checkCRC32(filename):
     '''

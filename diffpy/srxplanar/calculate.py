@@ -50,10 +50,11 @@ class Calculate(object):
 
 
     def __init__(self, p):
+        # create parameter proxy, so that parameters can be accessed by self.parametername in read-only mode
         self.config = p
         self.prepareCalculation()
         return
-    
+
     def prepareCalculation(self):
         '''
         prepare data for calculation
@@ -66,7 +67,7 @@ class Calculate(object):
                                         self.xr.reshape(1, self.xdimension))
         self.genTTHorQMatrix()
         return
-    
+
     def genTTHorQMatrix(self):
         '''
         generate a twotheta matrix or q matrix which stores the tth or q value
@@ -82,7 +83,7 @@ class Calculate(object):
             self.xgrid = self.bin_edges[1:] - self.qstep / 2
             self.tthorqmatrix = self.genQMatrix()
         return
-    
+
     def genIntegrationInds(self, mask=None):
         '''
         generate self.bin_number used in integration
@@ -95,11 +96,11 @@ class Calculate(object):
         if mask == None:
             mask = np.zeros((self.ydimension, self.xdimension), dtype=bool)
         self.maskedmatrix[mask] = 1000.0
-        
+
         self.bin_number = np.array(np.histogram(self.maskedmatrix, self.bin_edges)[0], dtype=float)
         self.bin_number[self.bin_number <= 0] = 1
         return self.bin_number
-    
+
     def intensity(self, pic):
         '''
         2D to 1D image integration, intensity of pixels are binned and then take average,
@@ -108,7 +109,7 @@ class Calculate(object):
         
         :retrun: 2d array, [tthorq, intensity, unceratinty] or [tthorq, intensity]
         '''
-        
+
         intensity = self.calculateIntensity(pic)
         if self.uncertaintyenable:
             std = np.sqrt(self.calculateVariance(pic))
@@ -128,7 +129,7 @@ class Calculate(object):
 
         intensity = np.histogram(self.maskedmatrix, self.bin_edges, weights=pic)[0]
         return intensity / self.bin_number
-    
+
     def calculateVariance(self, pic):
         '''
         calculate the 1D intensity
@@ -140,7 +141,7 @@ class Calculate(object):
         picvar = self.calculateVarianceLocal(pic)
         variance = np.histogram(self.maskedmatrix, self.bin_edges, weights=picvar)[0]
         return variance / self.bin_number
-    
+
     def calculateVarianceLocal(self, pic):
         '''
         calculate the variance of raw counts of each pixel are calculated according to their 
@@ -150,18 +151,18 @@ class Calculate(object):
         
         :return: 2d array, variance of each pixel
         '''
-        
+
         picavg = snf.uniform_filter(pic, 5, mode='wrap')
         pics2 = (pic - picavg) ** 2
-        pvar = snf.uniform_filter(pics2, 5, mode='wrap')       
-        
+        pvar = snf.uniform_filter(pics2, 5, mode='wrap')
+
         gain = pvar / pic
         gain[np.isnan(gain)] = 0
         gain[np.isinf(gain)] = 0
         gainmedian = np.median(gain)
         var = pic * gainmedian
         return var
-    
+
     def genDistanceMatrix(self):
         '''
         Calculate the distance matrix
@@ -175,7 +176,7 @@ class Calculate(object):
         sourcexr = -self.distance * sint * cosr
         sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
-        
+
         dmatrix = np.zeros((self.ydimension, self.xdimension), dtype=float)
         dmatrix += ((self.xr - sourcexr) ** 2).reshape(1, self.xdimension)
         dmatrix += ((self.yr - sourceyr) ** 2).reshape(self.ydimension, 1)
@@ -189,7 +190,7 @@ class Calculate(object):
         
         :return: 2d array, two theta angle of each pixel's center
         '''
-    
+
         sinr = np.sin(-self.rotation)
         cosr = np.cos(-self.rotation)
         sint = np.sin(self.tilt)
@@ -197,14 +198,14 @@ class Calculate(object):
         sourcexr = -self.distance * sint * cosr
         sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
-        
+
         tthmatrix1 = np.zeros((self.ydimension, self.xdimension), dtype=float)
         tthmatrix1 += ((-self.xr + sourcexr) * sourcexr).reshape(1, self.xdimension)
         tthmatrix1 += ((-self.yr + sourceyr) * sourceyr).reshape(self.ydimension, 1)
         tthmatrix1 += sourcezr * sourcezr
         tthmatrix = np.arccos(tthmatrix1 / self.dmatrix / self.distance)
         return tthmatrix
-    
+
     def genQMatrix(self):
         '''
         Calculate the q matrix 
@@ -218,7 +219,7 @@ class Calculate(object):
         sourcexr = -self.distance * sint * cosr
         sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
-        
+
         tthmatrix1 = np.zeros((self.ydimension, self.xdimension), dtype=float)
         tthmatrix1 += ((-self.xr + sourcexr) * sourcexr).reshape(1, self.xdimension)
         tthmatrix1 += ((-self.yr + sourceyr) * sourceyr).reshape(self.ydimension, 1)
@@ -226,7 +227,7 @@ class Calculate(object):
         tthmatrix = np.arccos(tthmatrix1 / self.dmatrix / self.distance)
         Q = 4 * np.pi * np.sin(tthmatrix / 2.0) / self.wavelength
         return Q
-    
+
     def genCorrectionMatrix(self):
         '''
         generate correction matrix. multiple the 2D raw counts array by this correction matrix
@@ -245,11 +246,11 @@ class Calculate(object):
         '''
         if self.sacorrectionenable:
             sourcezr = self.distance * np.cos(self.tilt)
-            correction = (self.dmatrix / sourcezr) 
+            correction = (self.dmatrix / sourcezr)
         else:
             correction = np.ones((self.ydimension, self.xdimension))
         return correction
-    
+
     def _polarizationCorrection(self):
         '''
         generate correction matrix of polarization correction for powder diffraction for 2D flat detector.
@@ -258,7 +259,7 @@ class Calculate(object):
         :return: 2d array, correction matrix to apply on the image
         '''
         if self.polcorrectionenable:
-            tthmatrix = self.tthorqmatrix if self.integrationspace == 'twotheta' else self.genTTHMatrix() 
+            tthmatrix = self.tthorqmatrix if self.integrationspace == 'twotheta' else self.genTTHMatrix()
             azimuthmatrix = self.azimuthmatrix
             p = 0.5 * (1 + (np.cos(tthmatrix)) ** 2)
             p1 = 0.5 * self.polcorrectf * np.cos(2 * azimuthmatrix) * (np.sin(tthmatrix)) ** 2

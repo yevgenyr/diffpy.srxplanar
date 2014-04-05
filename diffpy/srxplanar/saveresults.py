@@ -20,18 +20,18 @@ from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 
 class SaveResults(object):
     '''
-    save results into files
+    save results into files 
     '''
     integrationspace = _configPropertyR('integrationspace')
     savedirectory = _configPropertyR('savedirectory')
     gsasoutput = _configPropertyR('gsasoutput')
     filenameplus = _configPropertyR('filenameplus')
-    
+
     def __init__(self, p):
         self.config = p
         self.prepareCalculation()
         return
-    
+
     def prepareCalculation(self):
         if not os.path.exists(self.savedirectory):
                 os.makedirs(self.savedirectory)
@@ -46,13 +46,13 @@ class SaveResults(object):
         :return: string, full normalized path of file without extension
         '''
         filebase = os.path.splitext(os.path.split(filename)[1])[0]
-        if self.filenameplus!='' and self.filenameplus!=None:
+        if self.filenameplus != '' and self.filenameplus != None:
             filenamep = '_'.join([filebase, self.filenameplus, self.integrationspace])
         else:
             filenamep = '_'.join([filebase, self.integrationspace])
         filepathwithoutext = os.path.join(self.savedirectory, filenamep)
         return filepathwithoutext
-        
+
     def save(self, rv):
         '''
         save diffraction intensity in .chi and gsas format(optional)
@@ -66,7 +66,7 @@ class SaveResults(object):
             if self.gsasoutput in set(['std', 'esd', 'fxye']):
                 rv = [rv, self.saveGSAS(rv['chi'], rv['filename'])]
         return rv
-    
+
     def saveChi(self, xrd, filename):
         '''
         save diffraction intensity in .chi
@@ -76,11 +76,12 @@ class SaveResults(object):
         '''
         filepath = self.getFilePathWithoutExt(filename) + '.chi'
         f = open(filepath, 'wb')
+        f.write('#### start data\n')
         f.write(self.config.getHeader(mode='short'))
         np.savetxt(f, xrd.transpose(), fmt='%g')
         f.close()
         return filepath
-    
+
     def saveGSAS(self, xrd, filename):
         '''
         save diffraction intensity in gsas format
@@ -89,16 +90,17 @@ class SaveResults(object):
         :param filename: str, base file name
         '''
         filepath = self.getFilePathWithoutExt(filename) + '.gsas'
-        f = open(filepath,'wb')
+        f = open(filepath, 'wb')
         f.write(self.config.getHeader(mode='short'))
-        if xrd.shape[0]==3:
+        f.write('#### start data\n')
+        if xrd.shape[0] == 3:
             s = writeGSASStr(os.path.splitext(path)[0], self.gsasoutput, xrd[0], xrd[1], xrd[2])
-        elif xrd.shape[0]==2:
+        elif xrd.shape[0] == 2:
             s = writeGSASStr(os.path.splitext(path)[0], self.gsasoutput, xrd[0], xrd[1])
         f.write(s)
         f.close()
         return filepath
-  
+
 def writeGSASStr(name, mode, tth, iobs, esd=None):
     """
     Return string of integrated intensities in GSAS format.
@@ -124,24 +126,24 @@ def writeGSASStr(name, mode, tth, iobs, esd=None):
     # two-theta0 and dtwo-theta in centidegrees
     tth0_cdg = tth[0] * 100
     dtth_cdg = (tth[-1] - tth[0]) / (len(tth) - 1) * 100
-    if esd==None: mode='std'
-    if mode=='std':
-        nrec = int(numpy.ceil(nchan/10.0))
+    if esd == None: mode = 'std'
+    if mode == 'std':
+        nrec = int(numpy.ceil(nchan / 10.0))
         lbank = "BANK %5i %8i %8i CONST %9.5f %9.5f %9.5f %9.5f STD" % \
                 (ibank, nchan, nrec, tth0_cdg, dtth_cdg, 0, 0)
         lines.append("%-80s" % lbank)
         lrecs = [ "%2i%6.0f" % (1, ii * scale) for ii in iobs ]
         for i in range(0, len(lrecs), 10):
-            lines.append("".join(lrecs[i:i+10]))
-    if mode=='esd':
-        nrec = int(numpy.ceil(nchan/5.0))
+            lines.append("".join(lrecs[i:i + 10]))
+    if mode == 'esd':
+        nrec = int(numpy.ceil(nchan / 5.0))
         lbank = "BANK %5i %8i %8i CONST %9.5f %9.5f %9.5f %9.5f ESD" % \
                 (ibank, nchan, nrec, tth0_cdg, dtth_cdg, 0, 0)
         lines.append("%-80s" % lbank)
         lrecs = [ "%8.0f%8.0f" % (ii, ee * scale) for ii, ee in zip(iobs, esd) ]
         for i in range(0, len(lrecs), 5):
-            lines.append("".join(lrecs[i:i+5]))
-    if mode=='fxye':
+            lines.append("".join(lrecs[i:i + 5]))
+    if mode == 'fxye':
         nrec = nchan
         lbank = "BANK %5i %8i %8i CONST %9.5f %9.5f %9.5f %9.5f FXYE" % \
                 (ibank, nchan, nrec, tth0_cdg, dtth_cdg, 0, 0)
