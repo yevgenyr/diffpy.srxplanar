@@ -15,7 +15,21 @@
 
 import numpy as np
 import scipy.sparse as ssp
-import fabio.openimage
+try:
+    import fabio
+    def openImage(im):
+        rv = fabio.openimage.openimage(im)
+        return rv.data
+except:
+    import tifffile
+    print 'Only tiff or .npy mask is support since fabio is not available'
+    def openImage(im):
+        try:
+            rv = tifffile.imread(im)
+        except:
+            rv = 0
+        return rv
+
 import scipy.ndimage.filters as snf
 import scipy.ndimage.morphology as snm
 import os
@@ -61,9 +75,8 @@ class Mask(object):
         if len(maskfit2ds) > 0:
             for maskfit2d in maskfit2ds:
                 if os.path.exists(maskfit2d):
-                    immask = fabio.openimage.openimage(maskfit2d)
                     # rv += self.flipImage(immask.data)
-                    rv += immask.data
+                    rv += openImage(maskfit2d)
         # .npy mask
         npymasks = filter(lambda msk: msk.endswith('.npy'), addmask)
         if len(npymasks) > 0:
@@ -75,7 +88,7 @@ class Mask(object):
         if len(tifmasks) > 0:
             for tifmask in tifmasks:
                 if os.path.exists(tifmask):
-                    immask = fabio.openimage.openimage(tifmask)
+                    immask = openImage(tifmask)
                     rv += self.flipImage(immask.data)
         # edge mask
         edgemask = filter(lambda msk: msk.startswith('edge'), addmask)

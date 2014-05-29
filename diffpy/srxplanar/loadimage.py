@@ -15,11 +15,21 @@
 
 import time
 import numpy as np
-import fabio, fabio.openimage
 import os
 import fnmatch
 import sys
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
+
+try:
+    import fabio
+    def openImage(im):
+        rv = fabio.openimage.openimage(im)
+        return rv.data
+except:
+    import tifffile
+    def openImage(im):
+        rv = tifffile.imread(im)
+        return rv
 
 class LoadImage(object):
     '''
@@ -70,16 +80,16 @@ class LoadImage(object):
             i = 0
             while i < 10:
                 try:
-                    image = fabio.openimage.openimage(filenamefull)
+                    image = openImage(filenamefull)
                     i = 10
                 except:
                     i = i + 1
                     time.sleep(2)
-            image = self.flipImage(image.data)
+            image = self.flipImage(image)
             image[image < 0] = 0
         return image
 
-    def genFileList(self, filenames=None, opendir=None, includepattern=None, excludepattern=None):
+    def genFileList(self, filenames=None, opendir=None, includepattern=None, excludepattern=None, fullpath=False):
         '''
         generate the list of file in opendir according to include/exclude pattern
         
@@ -92,15 +102,11 @@ class LoadImage(object):
         
         :return: list of str, a list of filenames (not include their full path)
         '''
-        filenames = self.filenames if filenames == None else filenames
-        opendir = self.opendirectory if opendir == None else opendir
-        includepattern = self.includepattern if includepattern == None else includepattern
-        excludepattern = self.excludepattern if excludepattern == None else excludepattern
-
-        fileset = self.genFileSet(filenames, opendir, includepattern, excludepattern)
+        
+        fileset = self.genFileSet(filenames, opendir, includepattern, excludepattern, fullpath)
         return sorted(list(fileset))
 
-    def genFileSet(self, filenames=None, opendir=None, includepattern=None, excludepattern=None):
+    def genFileSet(self, filenames=None, opendir=None, includepattern=None, excludepattern=None, fullpath=False):
         '''
         generate the list of file in opendir according to include/exclude pattern
         
@@ -130,4 +136,7 @@ class LoadImage(object):
             for filename in filenames:
                 fileset1 |= set(fnmatch.filter(fileset, filename))
             fileset = fileset1
+        if fullpath:
+            filelist = map(lambda x: os.path.abspath(os.path.join(opendir, x)), fileset)
+            fileset = set(filelist)
         return fileset

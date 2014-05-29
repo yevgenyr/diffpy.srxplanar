@@ -93,7 +93,7 @@ class SrXplanar(object):
             self.calculate.genIntegrationInds(dymask)
             chi = self.calculate.intensity(image)
             index = np.rint(self.calculate.tthorqmatrix / self.config.tthorqstep).astype(int)
-            index[index >= len(chi[1])] = len(chi[1] - 1)
+            index[index >= len(chi[1]) - 1] = len(chi[1]) - 1
             avgimage = chi[1][index.ravel()].reshape(index.shape)
             mask = np.logical_or(image < avgimage * 0.5, image > avgimage * 2.0)
             self.staticmask = np.logical_or(np.logical_or(self.staticmask, mask), dymask)
@@ -140,7 +140,7 @@ class SrXplanar(object):
             rv = imagename
         return rv
 
-    def _getPic(self, image, flip=True):
+    def _getPic(self, image, flip=None, correction=None):
         '''
         load picture to 2d array
         
@@ -149,9 +149,11 @@ class SrXplanar(object):
             if list of string, load the image files using the string as their path
             and sum them togethor
             if 2d array, use that array directly
-        :param flip: if image is str or list of str, flip will be ignored,
-            if image is 2d array, array will be flip if True and flip behavior is 
-            controlled using the option value in self.config
+        :param flip: flip the image/2d array,
+            if None: flip on the string/list of string, not flip on the 2d array
+            Flip behavior is controlled in self.config
+        :param correction: apply correction to the returned 2d array
+            if None: correct on the string/list of string, not correct on the 2d array
             
         :return: 2d array of image
         '''
@@ -162,16 +164,17 @@ class SrXplanar(object):
             rv /= len(image)
         elif isinstance(image, (str, unicode)):
             rv = self.loadimage.loadImage(image)
-            rv *= self.correction
-        elif flip:
-            rv = self.loadimage.flipImage(image)
-            rv *= self.correction
+            if correction == None or correction == True:
+                rv *= self.correction
         else:
             rv = image
-            rv *= self.correction
+            if flip == True:
+                rv = self.loadimage.flipImage(rv)
+            if correction == True:
+                rv *= self.correction
         return rv.astype(float)
 
-    def integrate(self, image, savename=None, savefile=True, flip=True, extramask=None):
+    def integrate(self, image, savename=None, savefile=True, flip=None, correction=None, extramask=None):
         '''
         integrate 2d image to 1d diffraction pattern, then save to disk
         
@@ -189,7 +192,7 @@ class SrXplanar(object):
             name of file to save to disk
         '''
         rv = {}
-        self.pic = self._getPic(image, flip)
+        self.pic = self._getPic(image, flip, correction)
 
         rv['filename'] = self._getSaveFileName(imagename=image, filename=savename)
         self._picChanged(extramask=extramask)
@@ -200,11 +203,11 @@ class SrXplanar(object):
             rv['filename'] = self.saveresults.save(rv)
         return rv
 
-    def integrateFilelist(self, filelist, summation=None, filename=None, extramask=None):
+    def integrateFilelist(self, filelist, summation=None, filename=None, flip=None, correction=None, extramask=None):
         '''
         process all file in filelist, integrate them separately or together
         
-        :param filelist: list of string, file list (full path)
+        :param filelist: list of string, files to be integrated (full path)
         :param summation: bool or None, sum all files together or not, if None,
             use self.config.summation
         :param filename: file name of output file
@@ -215,17 +218,22 @@ class SrXplanar(object):
         '''
         summation = self.config.summation if summation == None else summation
         if (summation)and(len(filelist) > 1):
-            image = self._getPic(filelist)
-            filename = os.path.splitext(filelist[-1])[0] + '_sum.chi' if filename == None else filename
-            rv = [self.integrate(image, savename=filename, flip=False, extramask=extramask)]
+            image = self._getPic(filelist, flip, correction)
+            if filename == None:
+                if isinstance(filelist[-1], str):
+                    filename = os.path.splitext(filelist[-1])[0] + '_sum.chi'
+                else:
+                    filename = 'Sum_xrd.chi'
+            rv = [self.integrate(image, savename=filename, extramask=extramask)]
         else:
             i = 0
             rv = []
             for imagefile in filelist:
                 if filename == None:
-                    rvv = self.integrate(imagefile, extramask=extramask)
+                    rvv = self.integrate(imagefile, flip=flip, correction=correction, extramask=extramask)
                 else:
-                    rvv = self.integrate(imagefile, savename=filename + '%03d' % i, extramask=extramask)
+                    rvv = self.integrate(imagefile, savename=filename + '%03d' % i,
+                                         flip=flip, correction=correction, extramask=extramask)
                 rv.append(rvv)
         return rv
 
