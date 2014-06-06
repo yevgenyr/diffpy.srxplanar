@@ -41,6 +41,8 @@ class Mask(object):
     
     static mask: fit2d (.msk) mask, tif mask, npy mask, masking edge pixels, 
     dymanic mask: masking dead pixels, bright pixels
+    
+    *fit2d mask if supported through Fabio
     '''
 
     xdimension = _configPropertyR('xdimension')

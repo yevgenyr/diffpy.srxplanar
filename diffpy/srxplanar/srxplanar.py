@@ -183,8 +183,11 @@ class SrXplanar(object):
             if 2d array, integrate this 2d array.
         :param savename: str, name of file to save
         :param savefile: boolean, if True, save file to disk, if False, do not save file to disk
-        :param flip: boolean, if True and 'image' is a 2d array, flip this array and integrate it
-            if False and 'image' is a 2d array, directly integrate it.
+        :param flip: flip the image/2d array,
+            if None: flip on the string/list of string, not flip on the 2d array
+            Flip behavior is controlled in self.config
+        :param correction: apply correction to the returned 2d array
+            if None: correct on the string/list of string, not correct on the 2d array
         :param extramask: 2d array, extra mask applied in integration 
         
         :return: dict, rv['chi'] is a 2d array of integrated intensity, shape is (2, len of intensity) 
@@ -211,6 +214,12 @@ class SrXplanar(object):
         :param summation: bool or None, sum all files together or not, if None,
             use self.config.summation
         :param filename: file name of output file
+        :param flip: flip the image/2d array,
+            if None: flip on the string/list of string, not flip on the 2d array
+            Flip behavior is controlled in self.config
+        :param correction: apply correction to the returned 2d array
+            if None: correct on the string/list of string, not correct on the 2d array
+        :param extramask: 2d array, extra mask applied in integration 
         
         :return: list of dict, in each dict, rv['chi'] is a 2d array of integrated intensity, shape is (2, len of intensity) 
             or (3, len of intensity) as [tth or q, intensity, (uncertainty)]. rv['filename'] is the 

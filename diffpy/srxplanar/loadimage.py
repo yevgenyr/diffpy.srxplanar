@@ -65,7 +65,8 @@ class LoadImage(object):
 
     def loadImage(self, filename):
         '''
-        load image, then subtract the background if configed in self.backgroundpic.
+        load image file, if failed (for example loading an incomplete file),
+        then it will keep trying loading file for 5s
         
         :param filename: str, image file name
         
@@ -84,7 +85,7 @@ class LoadImage(object):
                     i = 10
                 except:
                     i = i + 1
-                    time.sleep(2)
+                    time.sleep(0.5)
             image = self.flipImage(image)
             image[image < 0] = 0
         return image
@@ -99,8 +100,9 @@ class LoadImage(object):
             all files match ALL patterns in this list will be included  
         :param excludepattern: list of str, list of wildcard of files that will be blocked,
             any files match ANY patterns in this list will be blocked
+        :param fullpath: bool, if true, return the full path of each file
         
-        :return: list of str, a list of filenames (not include their full path)
+        :return: list of str, a list of filenames
         '''
         
         fileset = self.genFileSet(filenames, opendir, includepattern, excludepattern, fullpath)
@@ -116,8 +118,9 @@ class LoadImage(object):
             all files match ALL patterns in this list will be included  
         :param excludepattern: list of str, list of wildcard of files that will be blocked,
             any files match ANY patterns in this list will be blocked
+        :param fullpath: bool, if true, return the full path of each file
         
-        :return: set of str, a list of filenames (not include their full path)
+        :return: set of str, a list of filenames
         '''
         filenames = self.filenames if filenames == None else filenames
         opendir = self.opendirectory if opendir == None else opendir

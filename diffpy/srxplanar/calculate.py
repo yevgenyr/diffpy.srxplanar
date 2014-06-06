@@ -86,9 +86,9 @@ class Calculate(object):
 
     def genIntegrationInds(self, mask=None):
         '''
-        generate self.bin_number used in integration
+        generate self.bin_number used in integration (number of pixels in on bin)
         
-        :param mask: mask 2D array, same dimension as image, 1 for masked pixel
+        :param mask: 2D array, mask of image, should have same dimension, 1 for masked pixel
         
         :return: self.bin_number
         '''
@@ -105,7 +105,7 @@ class Calculate(object):
         '''
         2D to 1D image integration, intensity of pixels are binned and then take average,
                 
-        :param pic: 2D array, array of raw counts, raw counts should be corrected
+        :param pic: 2D array, array of raw counts, corrections hould be already applied
         
         :retrun: 2d array, [tthorq, intensity, unceratinty] or [tthorq, intensity]
         '''
@@ -134,7 +134,7 @@ class Calculate(object):
         '''
         calculate the 1D intensity
          
-        :param pic: 2D array, array of raw counts, raw counts should be corrected
+        :param pic: 2D array, array of raw counts, corrections hould be already applied
         
         :retrun: 1d array, variance of integrated intensity
         '''
@@ -147,7 +147,7 @@ class Calculate(object):
         calculate the variance of raw counts of each pixel are calculated according to their 
         loacl variance.
         
-        :param picflat: 1d array, flattend image array
+        :param pic: 2d array, 2d image array, corrections hould be already applied
         
         :return: 2d array, variance of each pixel
         '''
@@ -188,7 +188,7 @@ class Calculate(object):
         '''
         Calculate the diffraction angle matrix 
         
-        :return: 2d array, two theta angle of each pixel's center
+        :return: 2d array, two theta angle (in radians) of each pixel's center
         '''
 
         sinr = np.sin(-self.rotation)

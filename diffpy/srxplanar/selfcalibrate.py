@@ -5,6 +5,22 @@ from functools import partial
 from scipy.optimize import minimize, leastsq, fmin_bfgs, fmin_l_bfgs_b, fmin_tnc, minimize_scalar, fmin_powell
 
 def halfcut(p, srx, image, xycenter, qind=[50, 1000], show=False, mode='x', output=0):
+    '''
+    cut the image into two half, integrate them and compare the results, if the calibration 
+    information is correct, two half should give same results.
+    
+    :param p: calibration parameters
+    :param srx: SrXplanar object, object to do the integration
+    :param image: str or 2d array, image to be calibrated
+    :param xycenter: [int, int], cut position
+    :param qind: [int, int], range of q to calculate the difference
+    :param show: bool, True to plot the cut
+    :param mode: str, mode of calibration, could be x, y, tilt, rotation, all
+    :param output: int, 0 to return one number (sum of square of difference),
+        1 to return the difference array
+    
+    :return: sum of square of difference or difference array
+    '''
     if mode == 'x':
         srx.updateConfig(xbeamcenter=p)
     elif mode == 'y':
@@ -82,6 +98,20 @@ def halfcut(p, srx, image, xycenter, qind=[50, 1000], show=False, mode='x', outp
 
 
 def selfCalibrateX(srx, image, qmax=20.0, mode='all', output=0):
+    '''
+    Do the self calibration using mode X
+    
+    the initial value is read from the current value of srx object, and the 
+    refined results will be writrn into the srx object
+    
+    :param srx: SrXplanar object, object to do the integration
+    :param image: str or 2d array, image to be calibrated
+    :param qmax: float, max of q value used in difference calculation
+    :param mode: str, mode of calibration, could be x, y, tilt, rotation, all
+    :param output: int, 0 to use fmin optimizer, 1 to use leastsq optimizer
+        
+    :return: list, refined parameter
+    '''
     bak = {}
     for opt in ['uncertaintyenable', 'integrationspace', 'qmax', 'qstep']:
         bak[opt] = getattr(srx.config, opt)
@@ -143,6 +173,19 @@ def selfCalibrateX(srx, image, qmax=20.0, mode='all', output=0):
     return p
 
 def selfCalibrate(srx, image, full=True):
+    '''
+    Do the self calibration
+    
+    the initial value is read from the current value of srx object, and the 
+    refined results will be writrn into the srx object
+    
+    :param srx: SrXplanar object, object to do the integration
+    :param image: str or 2d array, image to be calibrated
+    :param full: if True, refine all parameters at once, otherwise, refine them
+        one by one.
+        
+    :return: list, refined parameter
+    '''
     p = []
     if not full:
         p = selfCalibrateX(srx, image, mode='x')
