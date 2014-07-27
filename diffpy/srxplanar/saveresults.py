@@ -76,8 +76,8 @@ class SaveResults(object):
         '''
         filepath = self.getFilePathWithoutExt(filename) + '.chi'
         f = open(filepath, 'wb')
-        f.write('#### start data\n')
         f.write(self.config.getHeader(mode='short'))
+        f.write('#### start data\n')
         np.savetxt(f, xrd.transpose(), fmt='%g')
         f.close()
         return filepath
