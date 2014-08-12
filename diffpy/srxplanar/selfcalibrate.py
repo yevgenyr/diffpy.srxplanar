@@ -34,6 +34,10 @@ def halfcut(p, srx, image, xycenter, qind=[50, 1000], show=False, mode='x', outp
                          ybeamcenter=p[1],
                          rotationd=p[2],
                          tiltd=p[3])
+    elif mode == 'xy':
+        srx.updateConfig(xbeamcenter=p[0],
+                         ybeamcenter=p[1])
+        
     kwargs = {'savename':None,
               'savefile':False,
               'flip':False,
@@ -146,6 +150,9 @@ def selfCalibrateX(srx, image, qmax=20.0, mode='all', output=0):
     elif mode == 'all':
         p0 = [srxconfig.xbeamcenter, srxconfig.ybeamcenter, srxconfig.rotationd, srxconfig.tiltd]
         bounds = [[p0[0] - 2, p0[0] + 2], [p0[0] - 2, p0[0] + 2], [0, 360], [srxconfig.tiltd - 10, srxconfig.tiltd + 10]]
+    elif mode == 'xy':
+        p0 = [srxconfig.xbeamcenter, srxconfig.ybeamcenter]
+        bounds = [[p0[0] - 3, p0[0] + 3], [p0[1] - 3, p0[1] + 3]]
     
     if output == 0:
         if mode != 'all':
@@ -172,7 +179,7 @@ def selfCalibrateX(srx, image, qmax=20.0, mode='all', output=0):
         srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], rotationd=p[2], tiltd=p[3], ** bak)
     return p
 
-def selfCalibrate(srx, image, full=True):
+def selfCalibrate(srx, image, mode='full'):
     '''
     Do the self calibration
     
@@ -181,17 +188,29 @@ def selfCalibrate(srx, image, full=True):
     
     :param srx: SrXplanar object, object to do the integration
     :param image: str or 2d array, image to be calibrated
-    :param full: if True, refine all parameters at once, otherwise, refine them
-        one by one.
+    :param mode: str:
+        full: refine all parameters at once
+        onebyone: refine x,y,tilt, rotation one by one
+        xy: only refine x and y
+        xyxy: refine x->y->xy
         
     :return: list, refined parameter
     '''
     p = []
-    if not full:
+    if mode == 'full':
+        p = selfCalibrateX(srx, image, mode='all')
+    elif mode == 'onebyone':
         p = selfCalibrateX(srx, image, mode='x')
         p = selfCalibrateX(srx, image, mode='y')
         p = selfCalibrateX(srx, image, mode='tilt')
         p = selfCalibrateX(srx, image, mode='rotation')
-    else:
-        p = selfCalibrateX(srx, image, mode='all')
+    elif mode == 'xy1':
+        p = selfCalibrateX(srx, image, mode='x')
+        p = selfCalibrateX(srx, image, mode='y')
+    elif mode == 'xy2':
+        p = selfCalibrateX(srx, image, mode='xy')
+    elif mode == 'xyxy':
+        p = selfCalibrateX(srx, image, mode='x')
+        p = selfCalibrateX(srx, image, mode='y')
+        p = selfCalibrateX(srx, image, mode='xyxy')
     return p
