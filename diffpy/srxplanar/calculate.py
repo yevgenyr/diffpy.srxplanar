@@ -47,6 +47,7 @@ class Calculate(object):
     sacorrectionenable = _configPropertyR('sacorrectionenable')
     polcorrectionenable = _configPropertyR('polcorrectionenable')
     polcorrectf = _configPropertyR('polcorrectf')
+    cropedges = _configPropertyR('cropedges')
 
 
     def __init__(self, p):
@@ -62,9 +63,13 @@ class Calculate(object):
         self.xydimension = self.xdimension * self.ydimension
         self.xr = (np.arange(self.xdimension, dtype=float) - self.xbeamcenter + 0.5) * self.xpixelsize
         self.yr = (np.arange(self.ydimension, dtype=float) - self.ybeamcenter + 0.5) * self.ypixelsize
+        
+        self.xr = self.xr[self.cropedges[0]:-self.cropedges[1]]
+        self.yr = self.yr[self.cropedges[2]:-self.cropedges[3]]
+        
         self.dmatrix = self.genDistanceMatrix()
-        self.azimuthmatrix = np.arctan2(self.yr.reshape(self.ydimension, 1),
-                                        self.xr.reshape(1, self.xdimension))
+        self.azimuthmatrix = np.arctan2(self.yr.reshape(len(self.yr), 1),
+                                        self.xr.reshape(1, len(self.xr)))
         self.genTTHorQMatrix()
         return
 
@@ -94,7 +99,10 @@ class Calculate(object):
         '''
         self.maskedmatrix = np.array(self.tthorqmatrix)
         if mask == None:
-            mask = np.zeros((self.ydimension, self.xdimension), dtype=bool)
+            # mask = np.zeros((self.ydimension, self.xdimension), dtype=bool)
+            mask = np.zeros((len(self.yr), len(self.xr)), dtype=bool)
+        ce = self.cropedges
+        mask = mask[ce[0]:-ce[1], ce[2]:-ce[3]]
         self.maskedmatrix[mask] = 1000.0
 
         self.bin_number = np.array(np.histogram(self.maskedmatrix, self.bin_edges)[0], dtype=float)
@@ -126,7 +134,8 @@ class Calculate(object):
         
         :retrun: 1d array, 1D integrated intensity
         '''
-
+        ce = self.cropedges
+        pic = pic[ce[0]:-ce[1], ce[2]:-ce[3]]
         intensity = np.histogram(self.maskedmatrix, self.bin_edges, weights=pic)[0]
         return intensity / self.bin_number
 
@@ -177,9 +186,10 @@ class Calculate(object):
         sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
 
-        dmatrix = np.zeros((self.ydimension, self.xdimension), dtype=float)
-        dmatrix += ((self.xr - sourcexr) ** 2).reshape(1, self.xdimension)
-        dmatrix += ((self.yr - sourceyr) ** 2).reshape(self.ydimension, 1)
+        # dmatrix = np.zeros((self.ydimension, self.xdimension), dtype=float)
+        dmatrix = np.zeros((len(self.yr), len(self.xr)), dtype=float)
+        dmatrix += ((self.xr - sourcexr) ** 2).reshape(1, len(self.xr))
+        dmatrix += ((self.yr - sourceyr) ** 2).reshape(len(self.yr), 1)
         dmatrix += sourcezr ** 2
         self.dmatrix = np.sqrt(dmatrix)
         return self.dmatrix
@@ -199,11 +209,13 @@ class Calculate(object):
         sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
 
-        tthmatrix1 = np.zeros((self.ydimension, self.xdimension), dtype=float)
-        tthmatrix1 += ((-self.xr + sourcexr) * sourcexr).reshape(1, self.xdimension)
-        tthmatrix1 += ((-self.yr + sourceyr) * sourceyr).reshape(self.ydimension, 1)
+        # tthmatrix1 = np.zeros((self.ydimension, self.xdimension), dtype=float)
+        tthmatrix1 = np.zeros((len(self.yr), len(self.xr)), dtype=float)
+        tthmatrix1 += ((-self.xr + sourcexr) * sourcexr).reshape(1, len(self.xr))
+        tthmatrix1 += ((-self.yr + sourceyr) * sourceyr).reshape(len(self.yr), 1)
         tthmatrix1 += sourcezr * sourcezr
         tthmatrix = np.arccos(tthmatrix1 / self.dmatrix / self.distance)
+        self.tthmatrix = tthmatrix
         return tthmatrix
 
     def genQMatrix(self):
@@ -220,11 +232,13 @@ class Calculate(object):
         sourceyr = self.distance * sint * sinr
         sourcezr = self.distance * cost
 
-        tthmatrix1 = np.zeros((self.ydimension, self.xdimension), dtype=float)
-        tthmatrix1 += ((-self.xr + sourcexr) * sourcexr).reshape(1, self.xdimension)
-        tthmatrix1 += ((-self.yr + sourceyr) * sourceyr).reshape(self.ydimension, 1)
+        # tthmatrix1 = np.zeros((self.ydimension, self.xdimension), dtype=float)
+        tthmatrix1 = np.zeros((len(self.yr), len(self.xr)), dtype=float)
+        tthmatrix1 += ((-self.xr + sourcexr) * sourcexr).reshape(1, len(self.xr))
+        tthmatrix1 += ((-self.yr + sourceyr) * sourceyr).reshape(len(self.yr), 1)
         tthmatrix1 += sourcezr * sourcezr
         tthmatrix = np.arccos(tthmatrix1 / self.dmatrix / self.distance)
+        self.tthmatrix = tthmatrix
         Q = 4 * np.pi * np.sin(tthmatrix / 2.0) / self.wavelength
         return Q
 
@@ -248,7 +262,7 @@ class Calculate(object):
             sourcezr = self.distance * np.cos(self.tilt)
             correction = (self.dmatrix / sourcezr)
         else:
-            correction = np.ones((self.ydimension, self.xdimension))
+            correction = np.ones((len(self.yr), len(self.xr)))
         return correction
 
     def _polarizationCorrection(self):
@@ -259,11 +273,13 @@ class Calculate(object):
         :return: 2d array, correction matrix to apply on the image
         '''
         if self.polcorrectionenable:
-            tthmatrix = self.tthorqmatrix if self.integrationspace == 'twotheta' else self.genTTHMatrix()
+            # tthmatrix = self.tthorqmatrix if self.integrationspace == 'twotheta' else self.genTTHMatrix()
+            tthmatrix = self.tthmatrix
             azimuthmatrix = self.azimuthmatrix
             p = 0.5 * (1 + (np.cos(tthmatrix)) ** 2)
             p1 = 0.5 * self.polcorrectf * np.cos(2 * azimuthmatrix) * (np.sin(tthmatrix)) ** 2
             p = 1.0 / (p - p1)
         else:
-            p = np.ones((self.ydimension, self.xdimension))
+            # p = np.ones((self.ydimension, self.xdimension))
+            p = np.ones((len(self.yr), len(self.xr)))
         return p

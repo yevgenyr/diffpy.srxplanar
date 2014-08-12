@@ -86,7 +86,7 @@ class SrXplanar(object):
         # if a pic is provided, then generate one-time dynamicmask
         if pic != None:
             image = self._getPic(pic)
-            image *= self.correction
+            # image *= self.correction
             dymask = self.mask.dynamicMask(image, addmask=['dead', 'bright'])
             dymask = np.logical_or(self.staticmask, dymask)
             # dymask = self.staticmask
@@ -95,7 +95,10 @@ class SrXplanar(object):
             index = np.rint(self.calculate.tthorqmatrix / self.config.tthorqstep).astype(int)
             index[index >= len(chi[1]) - 1] = len(chi[1]) - 1
             avgimage = chi[1][index.ravel()].reshape(index.shape)
-            mask = np.logical_or(image < avgimage * 0.5, image > avgimage * 2.0)
+            mask = np.ones((self.config.ydimension, self.config.xdimension), dtype=bool)
+            ce = self.config.cropedges
+            mask[ce[0]:-ce[1], ce[2]:-ce[3]] = np.logical_or(image[ce[0]:-ce[1], ce[2]:-ce[3]] < avgimage * 0.5,
+                                                            image[ce[0]:-ce[1], ce[2]:-ce[3]] > avgimage * 2.0)
             self.staticmask = np.logical_or(np.logical_or(self.staticmask, mask), dymask)
 
         self.calculate.genIntegrationInds(self.staticmask)
@@ -158,20 +161,24 @@ class SrXplanar(object):
         :return: 2d array of image
         '''
         if isinstance(image, list):
-            rv = np.zeros((self.config.ydimension, self.config.xdimension))
+            rv = np.zeros((len(self.config.yr), len(self.config.xr)))
             for imagefile in image:
                 rv += self._getPic(imagefile)
             rv /= len(image)
         elif isinstance(image, (str, unicode)):
             rv = self.loadimage.loadImage(image)
             if correction == None or correction == True:
-                rv *= self.correction
+                ce = self.config.cropedges
+                rv[ce[0]:-ce[1], ce[2]:-ce[3]] = rv[ce[0]:-ce[1], ce[2]:-ce[3]] * self.correction 
+                # rv *= self.correction
         else:
             rv = image
             if flip == True:
                 rv = self.loadimage.flipImage(rv)
             if correction == True:
-                rv *= self.correction
+                # rv *= self.correction
+                ce = self.config.cropedges
+                rv[ce[0]:-ce[1], ce[2]:-ce[3]] = rv[ce[0]:-ce[1], ce[2]:-ce[3]] * self.correction
         return rv.astype(float)
 
     def integrate(self, image, savename=None, savefile=True, flip=None, correction=None, extramask=None):
