@@ -84,11 +84,9 @@ _optdatalist = [
             'tt':'directory'}],
         ['addmask', {'sec':'Experiment',
             'h':
-'''list of masks to apply on the image. Specify filename of mask file (support .msk, .npy, and .tif).
-add "edgemask" to mask the pixels at edges, add "deadpixel" to mask dead pixels, add "brightpixel"\
-to mask bright pixels.''',
+'''list of masks to apply on the image. Specify filename of mask file (support .msk, .npy, and .tif). 
+add "deadpixel" to mask dead pixels, add "brightpixel" to mask bright pixels.''',
             'n':'*',
-            # 'd':['edgemask'], }],
             'd':[], }],
         ['createmask', {'sec':'Control', 'config':'n', 'header':'n',
             'h':'create a mask file according to current image file and value of addmask',
@@ -195,13 +193,6 @@ to mask bright pixels.''',
         ['filenameplus', {'sec':'Others', 'header':'n',
             'h':'string appended to the output filename',
             'd':'', }],
-        ['maskedges', {'sec':'Others',
-            'h':'mask the edge pixels, first four means the number of pixels masked in each edge \
-(left, right, top, bottom), the last one is the radius of a region masked around the corner',
-            'n':5,
-            'tt':'array',
-            't':'intlist',
-            'd':[20, 20, 20, 20, 100], }],
         ['cropedges', {'sec':'Others',
             'h':'crop the edge pixels, first four means the number of pixels masked in each edge \
 (left, right, top, bottom), must larger than 0',

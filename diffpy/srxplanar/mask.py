@@ -39,7 +39,7 @@ class Mask(object):
     '''
     provide methods for mask generation, including:
     
-    static mask: fit2d (.msk) mask, tif mask, npy mask, masking edge pixels, 
+    static mask: fit2d (.msk) mask, tif mask, npy mask
     dymanic mask: masking dead pixels, bright pixels
     
     *fit2d mask if supported through Fabio
@@ -49,7 +49,6 @@ class Mask(object):
     ydimension = _configPropertyR('ydimension')
     fliphorizontal = _configPropertyR('fliphorizontal')
     flipvertical = _configPropertyR('flipvertical')
-    maskedges = _configPropertyR('maskedges')
     wavelength = _configPropertyR('wavelength')
     addmask = _configPropertyR('addmask')
 
@@ -61,11 +60,9 @@ class Mask(object):
         '''
         create a static mask according existing mask file. This mask remain unchanged for different images
         
-        :param addmask: list of string, file name of mask and/or 'edge', 
+        :param addmask: list of string, file name of mask, 
             mask file supported: .msk, .npy, .tif file, ATTN: mask array should be already flipped, 
             and 1 (or larger) stands for masked pixels, 0(<0) stands for unmasked pixels
-            if 'edge' is specified here. it will create a mask that mask the pixel near the edge of detector,
-            require self.maskedges 
         
         :return: 2d array of boolean, 1 stands for masked pixel
         '''
@@ -92,12 +89,7 @@ class Mask(object):
                 if os.path.exists(tifmask):
                     immask = openImage(tifmask)
                     rv += self.flipImage(immask.data)
-        # edge mask
-        edgemask = filter(lambda msk: msk.startswith('edge'), addmask)
-        if len(edgemask) > 0:
-            if np.sum(self.maskedges) != 0:
-                rv += self.edgeMask(self.maskedges)
-
+        
         self.staticmask = (rv > 0)
         return self.staticmask
 
@@ -169,38 +161,6 @@ class Mask(object):
         rank = snf.rank_filter(pic, -size, size)
         ind = snm.binary_dilation(pic > rank * r, np.ones((3, 3)))
         return ind
-
-    def edgeMask(self, edges=None):
-        '''
-        mask the pixels near edge and around corner
-        
-        :param edges: list of int (length of 5), first 4 are numbers of pixels masked at each edge
-            in (left, right, top, bottom), last one is the radius of round cut at the corner
-        
-        :return: 2d array of boolean, 1 stands for masked pixel
-        '''
-        edges = self.maskedges if edges == None else edges
-        rv = np.zeros((self.ydimension, self.xdimension))
-        if edges[0] != 0:
-            rv[:, :edges[0]] = 1
-        if edges[1] != 0:
-            rv[:, -edges[1]:] = 1
-        if edges[2] != 0:
-            rv[:edges[2], :] = 1
-        if edges[3] != 0:
-            rv[-edges[3]::, :] = 1
-
-        ra = edges[4]
-        ball = np.zeros((ra * 2, ra * 2))
-        radi = (np.arange(ra * 2) - ra).reshape((1, ra * 2)) ** 2 + \
-                (np.arange(ra * 2) - ra).reshape((ra * 2, 1)) ** 2
-        radi = np.sqrt(radi)
-        ind = radi > ra
-        rv[-edges[3] - ra:-edges[3], edges[0]:edges[0] + ra] = ind[-ra:, :ra]
-        rv[-edges[3] - ra:-edges[3], -edges[1] - ra:-edges[1]] = ind[-ra:, -ra:]
-        rv[edges[2]: edges[2] + ra, edges[0]:edges[0] + ra] = ind[:ra, :ra]
-        rv[edges[2]: edges[2] + ra, -edges[1] - ra:-edges[1]] = ind[:ra, -ra:]
-        return rv
 
     def undersample(self, undersamplerate):
         '''
