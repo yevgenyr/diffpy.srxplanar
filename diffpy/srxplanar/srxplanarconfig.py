@@ -204,11 +204,19 @@ to mask bright pixels.''',
             'd':[20, 20, 20, 20, 100], }],
         ['cropedges', {'sec':'Others',
             'h':'crop the edge pixels, first four means the number of pixels masked in each edge \
-(left, right, top, bottom)',
+(left, right, top, bottom), must larger than 0',
             'n':4,
             'tt':'array',
             't':'intlist',
-            'd':[20, 20, 20, 20], }],
+            'd':[10, 10, 10, 10], }],
+        ['extracrop', {'sec':'Others', 'args':'n', 'config':'n', 'header':'n',
+            'h':'crop the edge pixels, first four means the number of pixels masked in each edge \
+(left, right, top, bottom), this crop is after all prepare calculation, \
+so change this value does not require a config update, must larger than 0',
+            'n':4,
+            'tt':'array',
+            't':'intlist',
+            'd':[1, 1, 1, 1], }],
         ['nocalculation', {'sec':'Others', 'config':'n', 'header':'n',
             'h':'set True to disable all calculation, will automaticly set True if createconfig or createmask',
             'n':'?',
@@ -266,6 +274,9 @@ class SrXplanarConfig(ConfigBase):
         elif self.integrationspace == 'qspace':
             self.tthorqmax = self.qmax
             self.tthorqstep = self.qstep
+            
+        self.cropedges = [a if a > 1 else 1 for a in self.cropedges]
+        self.extracrop = [a if a > 1 else 1 for a in self.extracrop]
         return
 
     # def _postUpdateConfig(self, nofit2d=False, **kwargs):

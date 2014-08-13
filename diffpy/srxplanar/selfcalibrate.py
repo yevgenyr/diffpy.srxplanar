@@ -2,9 +2,10 @@ import numpy as np
 import scipy as sp
 import os
 from functools import partial
-from scipy.optimize import minimize, leastsq, fmin_bfgs, fmin_l_bfgs_b, fmin_tnc, minimize_scalar, fmin_powell
+from scipy.optimize import minimize, leastsq, fmin_bfgs, fmin_l_bfgs_b, fmin_tnc, minimize_scalar, fmin_powell, \
+                            fmin_cg, fmin_slsqp, brent, golden
 
-def halfcut(p, srx, image, xycenter, qind=[50, 1000], show=False, mode='x', output=0):
+def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', output=0):
     '''
     cut the image into two half, integrate them and compare the results, if the calibration 
     information is correct, two half should give same results.
@@ -15,7 +16,7 @@ def halfcut(p, srx, image, xycenter, qind=[50, 1000], show=False, mode='x', outp
     :param xycenter: [int, int], cut position
     :param qind: [int, int], range of q to calculate the difference
     :param show: bool, True to plot the cut
-    :param mode: str, mode of calibration, could be x, y, tilt, rotation, all
+    :param mode: str, mode of calibration, could be x, y, tilt, rotation, all, xy
     :param output: int, 0 to return one number (sum of square of difference),
         1 to return the difference array
     
@@ -37,46 +38,42 @@ def halfcut(p, srx, image, xycenter, qind=[50, 1000], show=False, mode='x', outp
     elif mode == 'xy':
         srx.updateConfig(xbeamcenter=p[0],
                          ybeamcenter=p[1])
-        
+    elif mode == 'show':
+        pass
+    
+    srx.prepareCalculation()
     kwargs = {'savename':None,
               'savefile':False,
               'flip':False,
               'correction':False,
               }
     if mode != 'y':
-        # x half
-        mask = np.zeros((srx.config.ydimension, srx.config.xdimension), dtype=bool)
-        mask[:, :xycenter[0]] = 1
-        res1 = srx.integrate(image, extramask=mask, **kwargs)
+        srx.config.extracrop = [1, srx.config.xdimension - xycenter[0], 1, 1]
+        res1 = srx.integrate(image, **kwargs)
         chi1 = res1['chi'][1][qind[0]:qind[1]]
     
-        mask = np.logical_not(mask)
-        res2 = srx.integrate(image, extramask=mask, **kwargs)
+        srx.config.extracrop = [xycenter[0], 1, 1, 1]
+        res2 = srx.integrate(image, **kwargs)
         chi2 = res2['chi'][1][qind[0]:qind[1]]
         
     if mode != 'x':
-        # y half
-        mask = np.zeros((srx.config.ydimension, srx.config.xdimension), dtype=bool)
-        mask[:xycenter[1], :] = 1
-        res3 = srx.integrate(image, extramask=mask, **kwargs)
+        srx.config.extracrop = [1, 1, 1, srx.config.ydimension - xycenter[1]]
+        res3 = srx.integrate(image, **kwargs)
         chi3 = res3['chi'][1][qind[0]:qind[1]]
     
-        mask = np.logical_not(mask)
-        res4 = srx.integrate(image, extramask=mask, **kwargs)
+        srx.config.extracrop = [1, 1, xycenter[1], 1]
+        res4 = srx.integrate(image, **kwargs)
         chi4 = res4['chi'][1][qind[0]:qind[1]]
         
     if mode == 'x':
         rv = chi1 - chi2
-        rv = rv / rv.max()
+        rv = rv / rv.mean()
     elif mode == 'y':
         rv = chi3 - chi4
-        rv = rv / rv.max()
+        rv = rv / rv.mean()
     else:
         r1 = chi1 - chi2
         r2 = chi3 - chi4
-        # r3 = chi1 - chi3
-        # r4 = chi2 - chi4
-        # rv = np.concatenate([r1 / r1.max(), r2 / r2.max(), r3 / r3.max(), r4 / r4.max()])
         rv = np.concatenate([r1 / r1.mean(), r2 / r2.mean()])
     
     rv0 = np.sum(rv ** 2)
@@ -100,8 +97,32 @@ def halfcut(p, srx, image, xycenter, qind=[50, 1000], show=False, mode='x', outp
         plt.show()
     return rv
 
-
-def selfCalibrateX(srx, image, qmax=20.0, mode='all', output=0):
+def minimize1(func, bounds):
+    '''
+    1d minimizer
+    
+    :param func: callable function f(x), 1d function
+    :param bounds: (float, float), the initial bounds
+    
+    :return: float, the value of x
+    '''
+    trylist = np.linspace(bounds[0], bounds[1], 32, True)
+    vlow = np.inf
+    rv = trylist[0]
+    for v in trylist:
+        temp = func(v)
+        if temp < vlow:
+            rv = v
+            vlow = temp
+    trylist = np.linspace(rv - 0.5, rv + 0.5, 32, True)
+    for v in trylist:
+        temp = func(v)
+        if temp < vlow:
+            rv = v
+            vlow = temp
+    return rv    
+    
+def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=False):
     '''
     Do the self calibration using mode X
     
@@ -110,25 +131,31 @@ def selfCalibrateX(srx, image, qmax=20.0, mode='all', output=0):
     
     :param srx: SrXplanar object, object to do the integration
     :param image: str or 2d array, image to be calibrated
-    :param qmax: float, max of q value used in difference calculation
-    :param mode: str, mode of calibration, could be x, y, tilt, rotation, all
+    :param xycenter: [int, int], cut position, if None, determine it using current beam center
+    :param mode: str, mode of calibration, could be x, y, xy, tilt, rotation, all
     :param output: int, 0 to use fmin optimizer, 1 to use leastsq optimizer
+    :param showresults: bool, plot the halfcut result
         
     :return: list, refined parameter
     '''
     bak = {}
-    for opt in ['uncertaintyenable', 'integrationspace', 'qmax', 'qstep']:
+    for opt in ['uncertaintyenable', 'integrationspace', 'qmax', 'qstep',
+                'cropedges', 'extracrop']:
         bak[opt] = getattr(srx.config, opt)
     
-    xycenter = [int(srx.config.xbeamcenter), int(srx.config.ybeamcenter)]
+    xycenter = [int(srx.config.xbeamcenter),
+                int(srx.config.ybeamcenter)]
+    
+    qmax = srx.config.qmax
+    qstep = qmax / 2000
     
     srx.updateConfig(uncertaintyenable=False,
                      integrationspace='qspace',
                      # qmax=qmax,
-                     qstep=0.02)
-    qind = [50, int(qmax / 0.02)]
+                     qstep=qstep)
+    qind = [50, 1000]
     
-    srx.prepareCalculation(pic=image)
+    srx.prepareCalculation()
     srxconfig = srx.config
     image = np.array(srx._getPic(image))
     
@@ -137,10 +164,10 @@ def selfCalibrateX(srx, image, qmax=20.0, mode='all', output=0):
 
     if mode == 'x':
         p0 = [srxconfig.xbeamcenter]
-        bounds = (p0[0] - 3, p0[0] + 3)
+        bounds = (p0[0] - 5, p0[0] + 5)
     elif mode == 'y':
         p0 = [srxconfig.ybeamcenter]
-        bounds = (p0[0] - 3, p0[0] + 3)
+        bounds = (p0[0] - 5, p0[0] + 5)
     elif mode == 'tilt':
         p0 = [srxconfig.tiltd]
         bounds = (p0[0] - 5, p0[0] + 5)
@@ -149,37 +176,42 @@ def selfCalibrateX(srx, image, qmax=20.0, mode='all', output=0):
         bounds = (0, 360)
     elif mode == 'all':
         p0 = [srxconfig.xbeamcenter, srxconfig.ybeamcenter, srxconfig.rotationd, srxconfig.tiltd]
-        bounds = [[p0[0] - 2, p0[0] + 2], [p0[0] - 2, p0[0] + 2], [0, 360], [srxconfig.tiltd - 10, srxconfig.tiltd + 10]]
+        bounds = [[p0[0] - 2, p0[0] + 2], [p0[1] - 2, p0[1] + 2], [0, 360], [srxconfig.tiltd - 10, srxconfig.tiltd + 10]]
     elif mode == 'xy':
         p0 = [srxconfig.xbeamcenter, srxconfig.ybeamcenter]
         bounds = [[p0[0] - 3, p0[0] + 3], [p0[1] - 3, p0[1] + 3]]
     
     if output == 0:
-        if mode != 'all':
-            rv = minimize_scalar(func, bounds=bounds, method='Bounded')
-            p = [rv.x]
+        if mode in ['x', 'y', 'tilt', 'rotation']:
+            rv = minimize1(func, bounds)
+            p = [rv]
         else:
-            # rv = minimize(func, p0, method='L-BFGS-B', bounds=bounds, options={'xtol':0.001})
-            rv = minimize(func, p0, method='Powell', bounds=bounds, options={'xtol':0.001})
+            rv = minimize(func, p0, method='Powell', bounds=bounds, options={'xtol':0.001, 'ftol':0.001})
             p = rv.x
     else:
         rv = leastsq(func, p0, epsfcn=0.001)
         p = rv[0]
     
+    if showresults:
+        halfcut([], srx=srx, image=image, xycenter=xycenter, qind=qind, show=True, mode='show', output=output)
+        
     print p
     if mode == 'x':
         srx.updateConfig(xbeamcenter=p[0], **bak)
+        prv = p[0]
     elif mode == 'y':
         srx.updateConfig(ybeamcenter=p[0], **bak)
     elif mode == 'tilt':
         srx.updateConfig(tiltd=p[0], ** bak)
     elif mode == 'rotation':
         srx.updateConfig(rotation=p[0], ** bak)
+    elif mode == 'xy':
+        srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], ** bak)
     elif mode == 'all':
-        srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], rotationd=p[2], tiltd=p[3], ** bak)
+        srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], rotationd=p[2], tiltd=p[3], ** bak)        
     return p
 
-def selfCalibrate(srx, image, mode='full'):
+def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False):
     '''
     Do the self calibration
     
@@ -188,29 +220,43 @@ def selfCalibrate(srx, image, mode='full'):
     
     :param srx: SrXplanar object, object to do the integration
     :param image: str or 2d array, image to be calibrated
-    :param mode: str:
-        full: refine all parameters at once
-        onebyone: refine x,y,tilt, rotation one by one
-        xy: only refine x and y
-        xyxy: refine x->y->xy
+    :param mode: str or list of str:
+        all: refine all parameters at once
+        xy: refine x and y
+        list of str: eg. ['x', 'y', 'xy'] -> refine x, then y, then xy
+    :param cropedges: list of int or str
+        if list of int, it will be passed to srx instance and used as cropedges
+        if 'auto', the cropedges of srx instance will be set automaticly ,
+        if 'x'('y'), then a slice along x(y) axis will be used
+        if 'box', then a box around the center will be used
+    :param showresults: bool, plot the halfcut result
         
     :return: list, refined parameter
     '''
     p = []
-    if mode == 'full':
-        p = selfCalibrateX(srx, image, mode='all')
-    elif mode == 'onebyone':
-        p = selfCalibrateX(srx, image, mode='x')
-        p = selfCalibrateX(srx, image, mode='y')
-        p = selfCalibrateX(srx, image, mode='tilt')
-        p = selfCalibrateX(srx, image, mode='rotation')
-    elif mode == 'xy1':
-        p = selfCalibrateX(srx, image, mode='x')
-        p = selfCalibrateX(srx, image, mode='y')
-    elif mode == 'xy2':
-        p = selfCalibrateX(srx, image, mode='xy')
-    elif mode == 'xyxy':
-        p = selfCalibrateX(srx, image, mode='x')
-        p = selfCalibrateX(srx, image, mode='y')
-        p = selfCalibrateX(srx, image, mode='xyxy')
+    if isinstance(mode, str):
+        xc = srx.config.xbeamcenter
+        yc = srx.config.ybeamcenter
+        xd = srx.config.xdimension
+        yd = srx.config.ydimension
+        
+        if not isinstance(cropedges, (list, tuple)):
+            if cropedges == 'y' or (cropedges == 'auto' and mode == 'y'):
+                ce = [int(xc - 50), int(xd - xc - 50), 50, 50]
+            elif cropedges == 'x' or (cropedges == 'auto' and mode == 'x'):
+                ce = [50, 50, int(yc - 50), int(yd - yc - 50)]
+            elif cropedges == 'box' or (cropedges == 'auto' and (not mode in ['x', 'y'])):
+                ce = [int(xc - xd / 6), int(xd - xc - xd / 6),
+                      int(yc - yd / 6), int(yd - yc - yd / 6)]
+            else:
+                ce = [20, 20, 20, 20]
+            
+            cebak = srx.config.cropedges
+            srx.updateConfig(cropedges=ce)
+            p = selfCalibrateX(srx, image, mode=mode, showresults=showresults)
+            srx.updateConfig(cropedges=cebak)
+            
+    elif isinstance(mode, (list, tuple)):
+        for m in mode:
+            p = selfCalibrate(srx, image, m, cropedges)
     return p

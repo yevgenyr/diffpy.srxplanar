@@ -97,8 +97,8 @@ class SrXplanar(object):
             avgimage = chi[1][index.ravel()].reshape(index.shape)
             mask = np.ones((self.config.ydimension, self.config.xdimension), dtype=bool)
             ce = self.config.cropedges
-            mask[ce[0]:-ce[1], ce[2]:-ce[3]] = np.logical_or(image[ce[0]:-ce[1], ce[2]:-ce[3]] < avgimage * 0.5,
-                                                            image[ce[0]:-ce[1], ce[2]:-ce[3]] > avgimage * 2.0)
+            mask[ce[2]:-ce[3], ce[0]:-ce[1]] = np.logical_or(image[ce[2]:-ce[3], ce[0]:-ce[1]] < avgimage * 0.5,
+                                                            image[ce[2]:-ce[3], ce[0]:-ce[1]] > avgimage * 2.0)
             self.staticmask = np.logical_or(np.logical_or(self.staticmask, mask), dymask)
 
         self.calculate.genIntegrationInds(self.staticmask)
@@ -161,7 +161,7 @@ class SrXplanar(object):
         :return: 2d array of image
         '''
         if isinstance(image, list):
-            rv = np.zeros((len(self.config.yr), len(self.config.xr)))
+            rv = np.zeros((self.config.ydimension, self.config.xdimension))
             for imagefile in image:
                 rv += self._getPic(imagefile)
             rv /= len(image)
@@ -169,7 +169,7 @@ class SrXplanar(object):
             rv = self.loadimage.loadImage(image)
             if correction == None or correction == True:
                 ce = self.config.cropedges
-                rv[ce[0]:-ce[1], ce[2]:-ce[3]] = rv[ce[0]:-ce[1], ce[2]:-ce[3]] * self.correction 
+                rv[ce[2]:-ce[3], ce[0]:-ce[1]] = rv[ce[2]:-ce[3], ce[0]:-ce[1]] * self.correction 
                 # rv *= self.correction
         else:
             rv = image
@@ -178,7 +178,7 @@ class SrXplanar(object):
             if correction == True:
                 # rv *= self.correction
                 ce = self.config.cropedges
-                rv[ce[0]:-ce[1], ce[2]:-ce[3]] = rv[ce[0]:-ce[1], ce[2]:-ce[3]] * self.correction
+                rv[ce[2]:-ce[3], ce[0]:-ce[1]] = rv[ce[2]:-ce[3], ce[0]:-ce[1]] * self.correction
         return rv.astype(float)
 
     def integrate(self, image, savename=None, savefile=True, flip=None, correction=None, extramask=None):

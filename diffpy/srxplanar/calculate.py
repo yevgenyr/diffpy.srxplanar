@@ -48,6 +48,7 @@ class Calculate(object):
     polcorrectionenable = _configPropertyR('polcorrectionenable')
     polcorrectf = _configPropertyR('polcorrectf')
     cropedges = _configPropertyR('cropedges')
+    extracrop = _configPropertyR('extracrop')
 
 
     def __init__(self, p):
@@ -102,10 +103,12 @@ class Calculate(object):
             # mask = np.zeros((self.ydimension, self.xdimension), dtype=bool)
             mask = np.zeros((len(self.yr), len(self.xr)), dtype=bool)
         ce = self.cropedges
-        mask = mask[ce[0]:-ce[1], ce[2]:-ce[3]]
+        mask = mask[ce[2]:-ce[3], ce[0]:-ce[1]]
         self.maskedmatrix[mask] = 1000.0
-
-        self.bin_number = np.array(np.histogram(self.maskedmatrix, self.bin_edges)[0], dtype=float)
+        
+        # extra crop
+        maskedmatrix = self.getMaskedmatrixPic()
+        self.bin_number = np.array(np.histogram(maskedmatrix, self.bin_edges)[0], dtype=float)
         self.bin_number[self.bin_number <= 0] = 1
         return self.bin_number
 
@@ -125,7 +128,26 @@ class Calculate(object):
         else:
             rv = np.vstack([self.xgrid, intensity])
         return rv
-
+    
+    def getMaskedmatrixPic(self, pic=None):
+        '''
+        return the maskedmatrix and pic using self.extracrop and self.cropedges
+        
+        :param pic: 2d array, pic array, if None, then only return maskedmatrix
+        
+        :return: croped maskedmatrix and pic 
+        '''
+        ec = self.extracrop
+        ce = self.cropedges
+        s = [ecx - cex if ecx > cex else 0 for ecx, cex in zip(ec, ce)]
+        s[3] = -s[3] if s[3] != 0 else None
+        s[1] = -s[1] if s[1] != 0 else None
+        rv = self.maskedmatrix[s[2]:s[3], s[0]:s[1]]
+        if pic != None:
+            ps = [max(s1, s2) for s1, s2 in zip(ce, ec)]
+            rv = self.maskedmatrix[s[2]:s[3], s[0]:s[1]], pic[ps[2]:-ps[3], ps[0]:-ps[1]]
+        return rv
+    
     def calculateIntensity(self, pic):
         '''
         calculate the 1D intensity
@@ -134,9 +156,10 @@ class Calculate(object):
         
         :retrun: 1d array, 1D integrated intensity
         '''
-        ce = self.cropedges
-        pic = pic[ce[0]:-ce[1], ce[2]:-ce[3]]
-        intensity = np.histogram(self.maskedmatrix, self.bin_edges, weights=pic)[0]
+        
+        maskedmatrix, pic = self.getMaskedmatrixPic(pic)
+        
+        intensity = np.histogram(maskedmatrix, self.bin_edges, weights=pic)[0]
         return intensity / self.bin_number
 
     def calculateVariance(self, pic):
@@ -147,8 +170,10 @@ class Calculate(object):
         
         :retrun: 1d array, variance of integrated intensity
         '''
+        maskedmatrix = self.getMaskedmatrixPic()
+        
         picvar = self.calculateVarianceLocal(pic)
-        variance = np.histogram(self.maskedmatrix, self.bin_edges, weights=picvar)[0]
+        variance = np.histogram(maskedmatrix, self.bin_edges, weights=picvar)[0]
         return variance / self.bin_number
 
     def calculateVarianceLocal(self, pic):
@@ -160,7 +185,8 @@ class Calculate(object):
         
         :return: 2d array, variance of each pixel
         '''
-
+        maskedmatrix, pic = self.getMaskedmatrixPic(pic)
+        
         picavg = snf.uniform_filter(pic, 5, mode='wrap')
         pics2 = (pic - picavg) ** 2
         pvar = snf.uniform_filter(pics2, 5, mode='wrap')
