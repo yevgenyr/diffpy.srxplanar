@@ -106,7 +106,7 @@ def minimize1(func, bounds):
     
     :return: float, the value of x
     '''
-    trylist = np.linspace(bounds[0], bounds[1], 32, True)
+    trylist = np.linspace(bounds[0], bounds[1], 3 * int(bounds[1] - bounds[0]), True)
     vlow = np.inf
     rv = trylist[0]
     for v in trylist:
@@ -114,7 +114,7 @@ def minimize1(func, bounds):
         if temp < vlow:
             rv = v
             vlow = temp
-    trylist = np.linspace(rv - 0.5, rv + 0.5, 32, True)
+    trylist = np.linspace(rv - 0.5, rv + 0.5, 20, True)
     for v in trylist:
         temp = func(v)
         if temp < vlow:
@@ -122,7 +122,7 @@ def minimize1(func, bounds):
             vlow = temp
     return rv    
     
-def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=False):
+def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=False, **kwargs):
     '''
     Do the self calibration using mode X
     
@@ -161,13 +161,14 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
     
     func = partial(halfcut, srx=srx, image=image, qind=qind, mode=mode, output=output,
                    xycenter=xycenter, show=False)
-
+    
+    xywidth = 6 if not kwargs.has_key('xywidth') else kwargs['xywidth'] 
     if mode == 'x':
         p0 = [srxconfig.xbeamcenter]
-        bounds = (p0[0] - 5, p0[0] + 5)
+        bounds = (p0[0] - xywidth, p0[0] + xywidth)
     elif mode == 'y':
         p0 = [srxconfig.ybeamcenter]
-        bounds = (p0[0] - 5, p0[0] + 5)
+        bounds = (p0[0] - xywidth, p0[0] + xywidth)
     elif mode == 'tilt':
         p0 = [srxconfig.tiltd]
         bounds = (p0[0] - 5, p0[0] + 5)
@@ -176,10 +177,11 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
         bounds = (0, 360)
     elif mode == 'all':
         p0 = [srxconfig.xbeamcenter, srxconfig.ybeamcenter, srxconfig.rotationd, srxconfig.tiltd]
-        bounds = [[p0[0] - 2, p0[0] + 2], [p0[1] - 2, p0[1] + 2], [0, 360], [srxconfig.tiltd - 10, srxconfig.tiltd + 10]]
+        bounds = [[p0[0] - xywidth, p0[0] + xywidth], [p0[1] - xywidth, p0[1] + xywidth],
+                  [0, 360], [srxconfig.tiltd - 10, srxconfig.tiltd + 10]]
     elif mode == 'xy':
         p0 = [srxconfig.xbeamcenter, srxconfig.ybeamcenter]
-        bounds = [[p0[0] - 3, p0[0] + 3], [p0[1] - 3, p0[1] + 3]]
+        bounds = [[p0[0] - xywidth, p0[0] + xywidth], [p0[1] - xywidth, p0[1] + xywidth]]
     
     if output == 0:
         if mode in ['x', 'y', 'tilt', 'rotation']:
@@ -211,7 +213,7 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
         srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], rotationd=p[2], tiltd=p[3], ** bak)        
     return p
 
-def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False):
+def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, **kwargs):
     '''
     Do the self calibration
     
@@ -253,7 +255,7 @@ def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False):
             
             cebak = srx.config.cropedges
             srx.updateConfig(cropedges=ce)
-            p = selfCalibrateX(srx, image, mode=mode, showresults=showresults)
+            p = selfCalibrateX(srx, image, mode=mode, showresults=showresults, **kwargs)
             srx.updateConfig(cropedges=cebak)
             
     elif isinstance(mode, (list, tuple)):
