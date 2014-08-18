@@ -147,13 +147,15 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
                 int(srx.config.ybeamcenter)]
     
     qmax = srx.config.qmax
-    qstep = qmax / 2000
+    # qstep = qmax / 2000
+    qstep = qmax / srx.config.xdimension
     
     srx.updateConfig(uncertaintyenable=False,
                      integrationspace='qspace',
                      # qmax=qmax,
                      qstep=qstep)
-    qind = [50, 1000]
+    # qind = [50, 1000]
+    qind = [srx.config.xdimension / 10, srx.config.xdimension / 2]
     
     srx.prepareCalculation()
     srxconfig = srx.config
@@ -231,6 +233,7 @@ def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, **
         if 'auto', the cropedges of srx instance will be set automaticly ,
         if 'x'('y'), then a slice along x(y) axis will be used
         if 'box', then a box around the center will be used
+        if 'all', then use all pixels
     :param showresults: bool, plot the halfcut result
         
     :return: list, refined parameter
@@ -244,14 +247,14 @@ def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, **
         
         if not isinstance(cropedges, (list, tuple)):
             if cropedges == 'y' or (cropedges == 'auto' and mode == 'y'):
-                ce = [int(xc - 50), int(xd - xc - 50), 50, 50]
+                ce = [int(xc - 50), int(xd - xc - 50), yd / 100, yd / 100]
             elif cropedges == 'x' or (cropedges == 'auto' and mode == 'x'):
-                ce = [50, 50, int(yc - 50), int(yd - yc - 50)]
+                ce = [xd / 100, xd / 100, int(yc - 50), int(yd - yc - 50)]
             elif cropedges == 'box' or (cropedges == 'auto' and (not mode in ['x', 'y'])):
                 ce = [int(xc - xd / 6), int(xd - xc - xd / 6),
                       int(yc - yd / 6), int(yd - yc - yd / 6)]
             else:
-                ce = [20, 20, 20, 20]
+                ce = [10, 10, 10, 10]
             
             cebak = srx.config.cropedges
             srx.updateConfig(cropedges=ce)
