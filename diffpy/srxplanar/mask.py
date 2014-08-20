@@ -88,7 +88,7 @@ class Mask(object):
             for tifmask in tifmasks:
                 if os.path.exists(tifmask):
                     immask = openImage(tifmask)
-                    rv += self.flipImage(immask.data)
+                    rv += self.flipImage(immask)
         
         self.staticmask = (rv > 0)
         return self.staticmask
