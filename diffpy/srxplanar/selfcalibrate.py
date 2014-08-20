@@ -67,14 +67,14 @@ def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', outpu
         
     if mode == 'x':
         rv = chi1 - chi2
-        rv = rv / rv.mean()
+        rv = rv / (chi1 + chi2).mean()
     elif mode == 'y':
         rv = chi3 - chi4
-        rv = rv / rv.mean()
+        rv = rv / (chi3 + chi4).mean()
     else:
         r1 = chi1 - chi2
         r2 = chi3 - chi4
-        rv = np.concatenate([r1 / r1.mean(), r2 / r2.mean()])
+        rv = np.concatenate([r1 / (chi1 + chi2).mean(), r2 / (chi3 + chi4).mean()])
     
     rv0 = np.sum(rv ** 2)
     print p
@@ -155,7 +155,7 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
                      # qmax=qmax,
                      qstep=qstep)
     # qind = [50, 1000]
-    qind = [srx.config.xdimension / 10, srx.config.xdimension / 2]
+    qind = [srx.config.xdimension / 20, srx.config.xdimension / 2]
     
     srx.prepareCalculation()
     srxconfig = srx.config
@@ -238,6 +238,9 @@ def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, **
         
     :return: list, refined parameter
     '''
+    
+    # lineCalibrate(srx, image)
+    
     p = []
     if isinstance(mode, str):
         xc = srx.config.xbeamcenter
@@ -265,3 +268,4 @@ def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, **
         for m in mode:
             p = selfCalibrate(srx, image, m, cropedges)
     return p
+
