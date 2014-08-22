@@ -191,7 +191,9 @@ class Calculate(object):
         pics2 = (pic - picavg) ** 2
         pvar = snf.uniform_filter(pics2, 5, mode='wrap')
 
-        gain = pvar / pic
+        gain = np.zeros_like(pvar)
+        nz = pic.nonzero()
+        gain[nz] = pvar[nz] / pic[nz]
         gain[np.isnan(gain)] = 0
         gain[np.isinf(gain)] = 0
         gainmedian = np.median(gain)
