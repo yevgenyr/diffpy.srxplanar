@@ -89,11 +89,12 @@ def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', outpu
         plt.figure(1)
         plt.clf()
         if mode != 'y':
-            plt.plot(res1['chi'][0], res1['chi'][1])
-            plt.plot(res2['chi'][0], res2['chi'][1])
+            plt.plot(res1['chi'][0], res1['chi'][1], label='left')
+            plt.plot(res2['chi'][0], res2['chi'][1], label='right')
         if mode != 'x':
-            plt.plot(res3['chi'][0], res3['chi'][1])
-            plt.plot(res4['chi'][0], res4['chi'][1])
+            plt.plot(res3['chi'][0], res3['chi'][1], label='up')
+            plt.plot(res4['chi'][0], res4['chi'][1], label='down')
+        plt.legend()
         plt.show()
     return rv
 
@@ -122,7 +123,7 @@ def minimize1(func, bounds):
             vlow = temp
     return rv    
     
-def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=False, **kwargs):
+def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=False, qrange=[None, None], **kwargs):
     '''
     Do the self calibration using mode X
     
@@ -135,6 +136,7 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
     :param mode: str, mode of calibration, could be x, y, xy, tilt, rotation, all
     :param output: int, 0 to use fmin optimizer, 1 to use leastsq optimizer
     :param showresults: bool, plot the halfcut result
+    :param qrange: q range used in calculating difference
         
     :return: list, refined parameter
     '''
@@ -155,7 +157,11 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
                      # qmax=qmax,
                      qstep=qstep)
     # qind = [50, 1000]
-    qind = [srx.config.xdimension / 20, srx.config.xdimension / 2]
+    qind = [None, None]
+    qind[0] = int(qrange[0] / qstep) if qrange[0] != None else srx.config.xdimension / 20
+    qind[0] = 0 if qind[0] < 0 else qind[0] 
+    qind[1] = int(qrange[1] / qstep) if qrange[1] != None else srx.config.xdimension / 2
+    qind[1] = srx.config.xdimension - 5 if qind[1] > srx.config.xdimension - 5 else qind[1]
     
     srx.prepareCalculation()
     srxconfig = srx.config
@@ -215,7 +221,7 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
         srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], rotationd=p[2], tiltd=p[3], ** bak)        
     return p
 
-def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, **kwargs):
+def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, qrange=[None, None], **kwargs):
     '''
     Do the self calibration
     
@@ -235,7 +241,8 @@ def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, **
         if 'box', then a box around the center will be used
         if 'all', then use all pixels
     :param showresults: bool, plot the halfcut result
-        
+    :param qrange: q range used in calculating difference
+    
     :return: list, refined parameter
     '''
     
@@ -261,11 +268,11 @@ def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, **
             
             cebak = srx.config.cropedges
             srx.updateConfig(cropedges=ce)
-            p = selfCalibrateX(srx, image, mode=mode, showresults=showresults, **kwargs)
+            p = selfCalibrateX(srx, image, mode=mode, showresults=showresults, qrange=qrange, **kwargs)
             srx.updateConfig(cropedges=cebak)
             
     elif isinstance(mode, (list, tuple)):
         for m in mode:
-            p = selfCalibrate(srx, image, m, cropedges)
+            p = selfCalibrate(srx, image, m, cropedges, qrange=qrange)
     return p
 
