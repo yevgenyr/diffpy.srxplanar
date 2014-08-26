@@ -4,6 +4,7 @@ import os
 from functools import partial
 from scipy.optimize import minimize, leastsq, fmin_bfgs, fmin_l_bfgs_b, fmin_tnc, minimize_scalar, fmin_powell, \
                             fmin_cg, fmin_slsqp, brent, golden
+import matplotlib.pyplot as plt
 
 def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', output=0):
     '''
@@ -85,18 +86,25 @@ def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', outpu
     if show:
         print p
         print rv
-        import matplotlib.pyplot as plt
-        plt.figure(1)
-        plt.clf()
-        if mode != 'y':
-            plt.plot(res1['chi'][0], res1['chi'][1], label='left')
-            plt.plot(res2['chi'][0], res2['chi'][1], label='right')
-        if mode != 'x':
-            plt.plot(res3['chi'][0], res3['chi'][1], label='up')
-            plt.plot(res4['chi'][0], res4['chi'][1], label='down')
-        plt.legend()
-        plt.show()
+        plotRes(mode, res1, res2, res3, res4)
     return rv
+
+def plotRes(mode, res1, res2, res3, res4):
+    '''
+    plot results
+    '''
+    plt.ion()
+    plt.figure(1)
+    plt.clf()
+    if mode != 'y':
+        plt.plot(res1['chi'][0], res1['chi'][1], label='left')
+        plt.plot(res2['chi'][0], res2['chi'][1], label='right')
+    if mode != 'x':
+        plt.plot(res3['chi'][0], res3['chi'][1], label='up')
+        plt.plot(res4['chi'][0], res4['chi'][1], label='down')
+    plt.legend()
+    plt.show()
+    return
 
 def minimize1(func, bounds):
     '''
@@ -107,7 +115,11 @@ def minimize1(func, bounds):
     
     :return: float, the value of x
     '''
-    trylist = np.linspace(bounds[0], bounds[1], 3 * int(bounds[1] - bounds[0]), True)
+    diffb = np.abs(bounds[1] - bounds[0])
+    if diffb > 6:
+        trylist = np.linspace(bounds[0], bounds[1], 3 * int(bounds[1] - bounds[0]) + 1, True)
+    else:
+        trylist = np.linspace(bounds[0], bounds[1], 21, True)
     vlow = np.inf
     rv = trylist[0]
     for v in trylist:
@@ -115,7 +127,11 @@ def minimize1(func, bounds):
         if temp < vlow:
             rv = v
             vlow = temp
-    trylist = np.linspace(rv - 0.5, rv + 0.5, 20, True)
+    if diffb > 6:
+        trylist = np.linspace(rv - 0.5, rv + 0.5, 21, True)
+    else:
+        trylist = np.linspace(rv - diffb / 12.0, rv + diffb / 12.0, 21, True)
+    
     for v in trylist:
         temp = func(v)
         if temp < vlow:
@@ -202,9 +218,6 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
         rv = leastsq(func, p0, epsfcn=0.001)
         p = rv[0]
     
-    if showresults:
-        halfcut([], srx=srx, image=image, xycenter=xycenter, qind=qind, show=True, mode='show', output=output)
-        
     print p
     if mode == 'x':
         srx.updateConfig(xbeamcenter=p[0], **bak)
@@ -218,7 +231,10 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
     elif mode == 'xy':
         srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], ** bak)
     elif mode == 'all':
-        srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], rotationd=p[2], tiltd=p[3], ** bak)        
+        srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], rotationd=p[2], tiltd=p[3], ** bak)
+    
+    if showresults:
+        halfcut([], srx=srx, image=image, xycenter=xycenter, qind=qind, show=True, mode='show', output=output)        
     return p
 
 def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, qrange=[None, None], **kwargs):
