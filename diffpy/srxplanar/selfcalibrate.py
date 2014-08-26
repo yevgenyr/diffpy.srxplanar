@@ -4,6 +4,7 @@ import os
 from functools import partial
 from scipy.optimize import minimize, leastsq, fmin_bfgs, fmin_l_bfgs_b, fmin_tnc, minimize_scalar, fmin_powell, \
                             fmin_cg, fmin_slsqp, brent, golden
+import matplotlib.pyplot as plt
 
 def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', output=0):
     '''
@@ -85,18 +86,29 @@ def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', outpu
     if show:
         print p
         print rv
-        import matplotlib.pyplot as plt
-        plt.figure(1)
-        plt.clf()
-        if mode != 'y':
-            plt.plot(res1['chi'][0], res1['chi'][1], label='left')
-            plt.plot(res2['chi'][0], res2['chi'][1], label='right')
-        if mode != 'x':
-            plt.plot(res3['chi'][0], res3['chi'][1], label='up')
-            plt.plot(res4['chi'][0], res4['chi'][1], label='down')
-        plt.legend()
-        plt.show()
+        try:
+            plotRes(mode, res1, res2, res3, res4)
+        except:
+            from pyface.api import GUI
+            GUI.invoke_later(plotRes, mode, res1, res2, res3, res4)
     return rv
+
+def plotRes(mode, res1, res2, res3, res4):
+    '''
+    plot results
+    '''
+    plt.ion()
+    plt.figure(1)
+    plt.clf()
+    if mode != 'y':
+        plt.plot(res1['chi'][0], res1['chi'][1], label='left')
+        plt.plot(res2['chi'][0], res2['chi'][1], label='right')
+    if mode != 'x':
+        plt.plot(res3['chi'][0], res3['chi'][1], label='up')
+        plt.plot(res4['chi'][0], res4['chi'][1], label='down')
+    plt.legend()
+    plt.show()
+    return
 
 def minimize1(func, bounds):
     '''
