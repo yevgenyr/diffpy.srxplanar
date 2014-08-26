@@ -210,9 +210,6 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
         rv = leastsq(func, p0, epsfcn=0.001)
         p = rv[0]
     
-    if showresults:
-        halfcut([], srx=srx, image=image, xycenter=xycenter, qind=qind, show=True, mode='show', output=output)
-        
     print p
     if mode == 'x':
         srx.updateConfig(xbeamcenter=p[0], **bak)
@@ -226,7 +223,10 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
     elif mode == 'xy':
         srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], ** bak)
     elif mode == 'all':
-        srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], rotationd=p[2], tiltd=p[3], ** bak)        
+        srx.updateConfig(xbeamcenter=p[0], ybeamcenter=p[1], rotationd=p[2], tiltd=p[3], ** bak)
+    
+    if showresults:
+        halfcut([], srx=srx, image=image, xycenter=xycenter, qind=qind, show=True, mode='show', output=output)        
     return p
 
 def selfCalibrate(srx, image, mode='xy', cropedges='auto', showresults=False, qrange=[None, None], **kwargs):
