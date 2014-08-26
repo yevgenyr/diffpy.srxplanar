@@ -107,7 +107,11 @@ def minimize1(func, bounds):
     
     :return: float, the value of x
     '''
-    trylist = np.linspace(bounds[0], bounds[1], 3 * int(bounds[1] - bounds[0]), True)
+    diffb = np.abs(bounds[1] - bounds[0])
+    if diffb > 6:
+        trylist = np.linspace(bounds[0], bounds[1], 3 * int(bounds[1] - bounds[0]) + 1, True)
+    else:
+        trylist = np.linspace(bounds[0], bounds[1], 21, True)
     vlow = np.inf
     rv = trylist[0]
     for v in trylist:
@@ -115,7 +119,11 @@ def minimize1(func, bounds):
         if temp < vlow:
             rv = v
             vlow = temp
-    trylist = np.linspace(rv - 0.5, rv + 0.5, 20, True)
+    if diffb > 6:
+        trylist = np.linspace(rv - 0.5, rv + 0.5, 21, True)
+    else:
+        trylist = np.linspace(rv - diffb / 12.0, rv + diffb / 12.0, 21, True)
+    
     for v in trylist:
         temp = func(v)
         if temp < vlow:
