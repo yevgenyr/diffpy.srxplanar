@@ -86,11 +86,7 @@ def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', outpu
     if show:
         print p
         print rv
-        try:
-            plotRes(mode, res1, res2, res3, res4)
-        except:
-            from pyface.api import GUI
-            GUI.invoke_later(plotRes, mode, res1, res2, res3, res4)
+        plotRes(mode, res1, res2, res3, res4)
     return rv
 
 def plotRes(mode, res1, res2, res3, res4):
