@@ -72,6 +72,7 @@ class Calculate(object):
         self.azimuthmatrix = np.arctan2(self.yr.reshape(len(self.yr), 1),
                                         self.xr.reshape(1, len(self.xr)))
         self.genTTHorQMatrix()
+        self.perviousmaskedmatrix = np.zeros(4)
         return
 
     def genTTHorQMatrix(self):
@@ -108,9 +109,9 @@ class Calculate(object):
         
         # extra crop
         maskedmatrix = self.getMaskedmatrixPic()
-        self.bin_number = np.array(np.histogram(maskedmatrix, self.bin_edges)[0], dtype=float)
-        self.bin_number[self.bin_number <= 0] = 1
-        return self.bin_number
+        # self.bin_number = np.array(np.histogram(maskedmatrix, self.bin_edges)[0], dtype=float)
+        # self.bin_number[self.bin_number <= 0] = 1
+        return  # self.bin_number
 
     def intensity(self, pic):
         '''
@@ -143,6 +144,13 @@ class Calculate(object):
         s[3] = -s[3] if s[3] != 0 else None
         s[1] = -s[1] if s[1] != 0 else None
         rv = self.maskedmatrix[s[2]:s[3], s[0]:s[1]]
+        
+        temps = np.array(s)
+        if any(self.perviousmaskedmatrix != temps):
+           self.perviousmaskedmatrix = temps
+           self.bin_number = np.array(np.histogram(rv, self.bin_edges)[0], dtype=float)
+           self.bin_number[self.bin_number <= 0] = 1
+        
         if pic != None:
             ps = [max(s1, s2) for s1, s2 in zip(ce, ec)]
             rv = self.maskedmatrix[s[2]:s[3], s[0]:s[1]], pic[ps[2]:-ps[3], ps[0]:-ps[1]]
