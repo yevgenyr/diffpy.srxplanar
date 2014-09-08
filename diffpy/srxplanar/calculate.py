@@ -200,8 +200,8 @@ class Calculate(object):
         pvar = snf.uniform_filter(pics2, 5, mode='wrap')
 
         gain = pvar / pic
-        gain[np.isnan(gain)] = 0
-        gain[np.isinf(gain)] = 0
+        inds = np.nonzero(np.logical_and(np.isnan(gain), np.isinf(gain)))
+        gain[inds] = 0
         gainmedian = np.median(gain)
         var = pic * gainmedian
         return var
