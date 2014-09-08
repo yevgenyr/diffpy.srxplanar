@@ -179,7 +179,9 @@ class SrXplanar(object):
                 # rv *= self.correction
                 ce = self.config.cropedges
                 rv[ce[2]:-ce[3], ce[0]:-ce[1]] = rv[ce[2]:-ce[3], ce[0]:-ce[1]] * self.correction
-        return rv.astype(float)
+        if rv.dtype.kind != 'f':
+            rv = rv.astype(float)
+        return rv
 
     def integrate(self, image, savename=None, savefile=True, flip=None, correction=None, extramask=None):
         '''
