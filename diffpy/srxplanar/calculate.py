@@ -202,7 +202,7 @@ class Calculate(object):
         gain = pvar / pic
         inds = np.nonzero(np.logical_and(np.isnan(gain), np.isinf(gain)))
         gain[inds] = 0
-        gainmedian = np.median(gain)
+        gainmedian = np.median(gain, overwrite_input=True)
         var = pic * gainmedian
         return var
 
