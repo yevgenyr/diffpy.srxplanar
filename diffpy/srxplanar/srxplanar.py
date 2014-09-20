@@ -101,7 +101,7 @@ class SrXplanar(object):
         self.calculate.genIntegrationInds(self.staticmask)
         return
     
-    def genAvgMask(self, pic, high=None, low=None, dymask=None):
+    def genAvgMask(self, pic, high=None, low=None, dymask=None, cropedges=None):
         '''
         generate a mask that automatically mask the pixels, whose intensities are 
         too high or too low compare to the pixels which have similar twotheta value
@@ -111,6 +111,8 @@ class SrXplanar(object):
         :param low: float (default: 0.5), int < avgint * low will be masked
         :param dymask: 2d bool array, mask array used in calculation, True for masked pixel, 
             if None, then use self.staticmask
+        :param cropedges: crop the image, maske pixels around the image edge (left, right, 
+            top, bottom), must larger than 0, if None, use self.config.corpedges
         
         :return 2d bool array, True for masked pixel, edgemake included, dymask not included
         '''
@@ -126,7 +128,7 @@ class SrXplanar(object):
         index[index >= len(chi[1]) - 1] = len(chi[1]) - 1
         avgimage = chi[1][index.ravel()].reshape(index.shape)
         mask = np.ones((self.config.ydimension, self.config.xdimension), dtype=bool)
-        ce = self.config.cropedges
+        ce = self.config.cropedges if cropedges == None else cropedges
         mask[ce[2]:-ce[3], ce[0]:-ce[1]] = np.logical_or(image[ce[2]:-ce[3], ce[0]:-ce[1]] < avgimage * low,
                                                         image[ce[2]:-ce[3], ce[0]:-ce[1]] > avgimage * high)
         return mask

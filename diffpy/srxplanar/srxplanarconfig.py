@@ -208,8 +208,7 @@ _optdatalist = [
             'h':'string appended to the output filename',
             'd':'', }],
         ['cropedges', {'sec':'Others',
-            'h':'crop the edge pixels, first four means the number of pixels masked in each edge \
-(left, right, top, bottom), must larger than 0',
+            'h':'crop the image, maske pixels around the image edge (left, right, top, bottom), must larger than 0',
             'n':4,
             'tt':'array',
             't':'intlist',
