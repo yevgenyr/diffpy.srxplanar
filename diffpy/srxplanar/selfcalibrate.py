@@ -158,7 +158,7 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
     '''
     bak = {}
     for opt in ['uncertaintyenable', 'integrationspace', 'qmax', 'qstep',
-                'cropedges', 'extracrop']:
+                'cropedges', 'extracrop', 'brightpixelmask', 'darkpixelmask', 'avgmask']:
         bak[opt] = getattr(srx.config, opt)
     
     xycenter = [int(srx.config.xbeamcenter),
@@ -171,7 +171,10 @@ def selfCalibrateX(srx, image, xycenter=None, mode='all', output=0, showresults=
     srx.updateConfig(uncertaintyenable=False,
                      integrationspace='qspace',
                      # qmax=qmax,
-                     qstep=qstep)
+                     qstep=qstep,
+                     brightpixelmask=False,
+                     darkpixelmask=False,
+                     avgmask=False)
     # qind = [50, 1000]
     qind = [None, None]
     qind[0] = int(qrange[0] / qstep) if qrange[0] != None else srx.config.xdimension / 20
