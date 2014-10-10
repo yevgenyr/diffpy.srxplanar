@@ -4,7 +4,11 @@ import os
 from functools import partial
 from scipy.optimize import minimize, leastsq, fmin_bfgs, fmin_l_bfgs_b, fmin_tnc, minimize_scalar, fmin_powell, \
                             fmin_cg, fmin_slsqp, brent, golden
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+    mplenabled = True
+except:
+    mplenabled = False
 
 def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', output=0):
     '''
@@ -83,7 +87,7 @@ def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', outpu
     if output == 0:
        rv = rv0
 
-    if show:
+    if show and mplenabled:
         print p
         print rv
         plotRes(mode, res1, res2, res3, res4)
