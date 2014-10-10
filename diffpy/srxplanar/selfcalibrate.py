@@ -4,11 +4,19 @@ import os
 from functools import partial
 from scipy.optimize import minimize, leastsq, fmin_bfgs, fmin_l_bfgs_b, fmin_tnc, minimize_scalar, fmin_powell, \
                             fmin_cg, fmin_slsqp, brent, golden
+from matplotlib import rcParams
 try:
+    import PySide
+    rcParams['backend.qt4'] = 'PySide'
     import matplotlib.pyplot as plt
     mplenabled = True
 except:
-    mplenabled = False
+    try: 
+        import PyQt4
+        import matplotlib.pyplot as plt
+        mplenabled = True
+    except:
+        mplenabled = False
 
 def halfcut(p, srx, image, xycenter, qind=[50, 500], show=False, mode='x', output=0):
     '''
