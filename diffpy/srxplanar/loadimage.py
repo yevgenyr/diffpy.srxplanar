@@ -19,17 +19,20 @@ import os
 import fnmatch
 import sys
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
-
-try:
-    import fabio
-    def openImage(im):
-        rv = fabio.openimage.openimage(im)
-        return rv.data
-except:
-    import tifffile
-    def openImage(im):
+import tifffile
+import subprocess
+    
+def openImage(im):
+    try:        
+        code = 'import numpy; import fabio; numpy.save("temp.npy", fabio.openimage.openimage("%s").data)' % im
+        cmd = [sys.executable, '-c', "'" + code + "'"]
+        p = subprocess.Popen(cmd)
+        p.wait()
+        rv = np.load('temp.npy')
+        os.remove('temp.npy')
+    except:
         rv = tifffile.imread(im)
-        return rv
+    return rv
 
 class LoadImage(object):
     '''
