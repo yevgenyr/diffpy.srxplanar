@@ -6,13 +6,13 @@ from scipy.optimize import minimize, leastsq, fmin_bfgs, fmin_l_bfgs_b, fmin_tnc
                             fmin_cg, fmin_slsqp, brent, golden
 from matplotlib import rcParams
 try:
-    import PyQt4
+    import PySide
+    rcParams['backend.qt4'] = 'PySide'
     import matplotlib.pyplot as plt
     mplenabled = True
 except:
     try: 
-        import PySide
-        rcParams['backend.qt4'] = 'PySide'
+        import PyQt4
         import matplotlib.pyplot as plt
         mplenabled = True
     except:
