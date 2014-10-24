@@ -29,7 +29,14 @@ def openImage(im):
         p = subprocess.Popen(cmd)
         p.wait()
         rv = np.load('temp.npy')
-        os.remove('temp.npy')
+        try:
+            os.remove('temp.npy')
+        except:
+            pass
+        try:
+            p.terminate()
+        except:
+            pass
     except:
         rv = tifffile.imread(im)
     return rv
