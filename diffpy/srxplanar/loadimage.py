@@ -21,24 +21,28 @@ import sys
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 import tifffile
 import subprocess
+import numpy as np
     
 def openImage(im):
-    try:        
-        code = 'import numpy; import fabio; numpy.save("temp.npy", fabio.openimage.openimage("%s").data)' % im
-        cmd = [sys.executable, '-c', "'" + code + "'"]
-        p = subprocess.Popen(cmd)
-        p.wait()
-        rv = np.load('temp.npy')
-        try:
-            os.remove('temp.npy')
+    if im.endswith('.txt'):
+        rv = np.loadtxt(im)
+    else:
+        try:        
+            code = 'import numpy; import fabio; numpy.save("temp.npy", fabio.openimage.openimage("%s").data)' % im
+            cmd = [sys.executable, '-c', "'" + code + "'"]
+            p = subprocess.Popen(cmd)
+            p.wait()
+            rv = np.load('temp.npy')
+            try:
+                os.remove('temp.npy')
+            except:
+                pass
+            try:
+                p.terminate()
+            except:
+                pass
         except:
-            pass
-        try:
-            p.terminate()
-        except:
-            pass
-    except:
-        rv = tifffile.imread(im)
+            rv = tifffile.imread(im)
     return rv
 
 class LoadImage(object):
