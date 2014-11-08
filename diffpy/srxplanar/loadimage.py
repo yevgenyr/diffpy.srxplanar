@@ -24,10 +24,17 @@ import subprocess
 import numpy as np
     
 def openImage(im):
-    if im.endswith('.txt'):
-        rv = np.loadtxt(im)
-    else:
-        try:        
+    ext = os.path.splitext(im)[1].lower()
+    try:
+        if ext == '.txt':
+            rv = np.loadtxt(im)
+        elif ext == '.dm3':
+            import DM3lib
+            dm3 = DM3lib.DM3(im)
+            rv = dm3.imagedata
+        elif ext in ['.tiff', '.tif']:
+            rv = tifffile.imread(im)
+        else:
             code = 'import numpy; import fabio; numpy.save("temp.npy", fabio.openimage.openimage("%s").data)' % im
             cmd = [sys.executable, '-c', "'" + code + "'"]
             p = subprocess.Popen(cmd)
@@ -41,8 +48,8 @@ def openImage(im):
                 p.terminate()
             except:
                 pass
-        except:
-            rv = tifffile.imread(im)
+    except:
+        rv = None
     return rv
 
 class LoadImage(object):
