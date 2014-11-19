@@ -34,6 +34,9 @@ def openImage(im):
             rv = dm3.imagedata
         elif ext in ['.tiff', '.tif']:
             rv = tifffile.imread(im)
+            if len(rv.shape) == 3:
+                ind = rv.shape.index(min(rv.shape))
+                rv = rv.mean(axis=ind)
         else:
             code = 'import numpy; import fabio; numpy.save("temp.npy", fabio.openimage.openimage("%s").data)' % im
             cmd = [sys.executable, '-c', "'" + code + "'"]
