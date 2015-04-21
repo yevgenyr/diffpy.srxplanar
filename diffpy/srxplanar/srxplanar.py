@@ -50,9 +50,9 @@ class SrXplanar(object):
         else:
             self.config = SrXplanarConfig(filename=configfile, args=args, **kwargs)
         # init modulars
-        self.mask = Mask(self.config)
         self.loadimage = LoadImage(self.config)
         self.calculate = Calculate(self.config)
+        self.mask = Mask(self.config, self.calculate)
         self.saveresults = SaveResults(self.config)
         return
 
@@ -72,66 +72,20 @@ class SrXplanar(object):
         self.saveresults.prepareCalculation()
         return
 
-    def prepareCalculation(self, pic=None, automask=True):
+    def prepareCalculation(self, pic=None):
         '''
         prepare data used in calculation
         
         :param pic: str, list of str, or 2d array, if provided, and automask is True, then 
             generate a dynamic mask
-        :param automask: bool, if True, and pic is not None, then generate a dynamic mask
         
         :return: None
         '''
         self.staticmask = self.mask.staticMask()
         self.correction = self.calculate.genCorrectionMatrix()
-        # if a pic is provided, then generate one-time dynamicmask
-        if (pic != None) and automask:
-            image = self._getPic(pic)
-            # image *= self.correction
-            dymask = self.mask.dynamicMask(image)
-            if dymask != None:
-                dymask = np.logical_or(self.staticmask, dymask)
-            else:
-                dymask = self.staticmask
-            
-            if self.config.avgmask:
-                mask = self.genAvgMask(image, dymask=dymask)
-                self.staticmask = np.logical_or(dymask, mask)
-
+        self.staticmask = np.logical_or(self.mask.edgeMask(), self.staticmask)
         self.calculate.genIntegrationInds(self.staticmask)
         return
-    
-    def genAvgMask(self, pic, high=None, low=None, dymask=None, cropedges=None):
-        '''
-        generate a mask that automatically mask the pixels, whose intensities are 
-        too high or too low compare to the pixels which have similar twotheta value
-        
-        :param pic: string or 2d array, image file (array)
-        :param high: float (default: 2.0), int > avgint * high will be masked
-        :param low: float (default: 0.5), int < avgint * low will be masked
-        :param dymask: 2d bool array, mask array used in calculation, True for masked pixel, 
-            if None, then use self.staticmask
-        :param cropedges: crop the image, maske pixels around the image edge (left, right, 
-            top, bottom), must larger than 0, if None, use self.config.corpedges
-        
-        :return 2d bool array, True for masked pixel, edgemake included, dymask not included
-        '''
-        image = self._getPic(pic)
-        if dymask == None:
-            dymask = self.staticmask
-        high = self.config.avgmaskhigh if high == None else high
-        low = self.config.avgmasklow if low == None else low
-        
-        self.calculate.genIntegrationInds(dymask)
-        chi = self.calculate.intensity(image)
-        index = np.rint(self.calculate.tthorqmatrix / self.config.tthorqstep).astype(int)
-        index[index >= len(chi[1]) - 1] = len(chi[1]) - 1
-        avgimage = chi[1][index.ravel()].reshape(index.shape)
-        mask = np.ones((self.config.ydimension, self.config.xdimension), dtype=bool)
-        ce = self.config.cropedges if cropedges == None else cropedges
-        mask[ce[2]:-ce[3], ce[0]:-ce[1]] = np.logical_or(image[ce[2]:-ce[3], ce[0]:-ce[1]] < avgimage * low,
-                                                        image[ce[2]:-ce[3], ce[0]:-ce[1]] > avgimage * high)
-        return mask
         
     def _picChanged(self, extramask=None):
         '''
@@ -141,7 +95,7 @@ class SrXplanar(object):
         
         :return: None
         '''
-        dynamicmask = self.mask.dynamicMask(self.pic)
+        dynamicmask = self.mask.dynamicMask(self.pic, dymask=self.staticmask)
 
         if dynamicmask != None:
             mask = np.logical_or(self.staticmask, dynamicmask)
