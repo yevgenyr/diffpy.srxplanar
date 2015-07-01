@@ -53,9 +53,14 @@ class Mask(object):
     maskfile = _configPropertyR('maskfile')
     brightpixelmask = _configPropertyR('brightpixelmask')
     darkpixelmask = _configPropertyR('darkpixelmask')
+    cropedges = _configPropertyR('cropedges')
+    avgmask = _configPropertyR('avgmask')
     
-    def __init__(self, p):
+    def __init__(self, p, calculate):
         self.config = p
+        self.staticmask = np.zeros((self.ydimension, self.xdimension))
+        self.dynamicmask = None
+        self.calculate = calculate
         return
 
     def staticMask(self, maskfile=None):
@@ -86,30 +91,78 @@ class Mask(object):
         self.staticmask = (rv > 0)
         return self.staticmask
 
-    def dynamicMask(self, pic, brightpixelmask=None, darkpixelmask=None):
+    def dynamicMask(self, pic, dymask=None, brightpixelmask=None, darkpixelmask=None, avgmask=None):
         '''
         create a dynamic mask according to image array. This mask changes for different images
         
         :param pic: 2d array, image array to be processed
+        :parma dymask: 2d array, mask array used in average mask calculation
         :param brightpixelmask: pixels with much lower intensity compare to adjacent pixels will be masked
         :param darkpixelmask: pixels with much higher intensity compare to adjacent pixels will be masked
+        :param avgmask: Mask the pixels too bright or too dark compared to the average intensity at the similar diffraction angle
              
         :return: 2d array of boolean, 1 stands for masked pixel
         '''
         
         brightpixelmask = self.brightpixelmask if brightpixelmask == None else brightpixelmask
         darkpixelmask = self.darkpixelmask if darkpixelmask == None else darkpixelmask
+        avgmask = self.avgmask if avgmask == None else avgmask
         
-        if darkpixelmask or brightpixelmask:
+        if darkpixelmask or brightpixelmask or avgmask:
             rv = np.zeros((self.ydimension, self.xdimension))
             if darkpixelmask:
                 rv += self.darkPixelMask(pic)
             if brightpixelmask:
                 rv += self.brightPixelMask(pic)
+            if avgmask:
+                rv += self.avgMask(pic, dymask=dymask)
             self.dynamicmask = (rv > 0)    
         else:
             self.dynamicmask = None
         return self.dynamicmask
+    
+    def edgeMask(self, cropedges=None):
+        '''
+        generate edge mask
+        
+        :param cropedges: crop the image, maske pixels around the image edge (left, right, 
+            top, bottom), must larger than 0, if None, use self.corpedges
+        '''
+        ce = self.cropedges if cropedges == None else cropedges
+        mask = np.ones((self.ydimension, self.xdimension), dtype=bool)
+        mask[ce[2]:-ce[3], ce[0]:-ce[1]] = 0
+        return mask
+    
+    def avgMask(self, image, high=None, low=None, dymask=None, cropedges=None):
+        '''
+        generate a mask that automatically mask the pixels, whose intensities are 
+        too high or too low compare to the pixels which have similar twotheta value
+        
+        :param image: 2d array, image file (array)
+        :param high: float (default: 2.0), int > avgint * high will be masked
+        :param low: float (default: 0.5), int < avgint * low will be masked
+        :param dymask: 2d bool array, mask array used in calculation, True for masked pixel, 
+            if None, then use self.staticmask
+        :param cropedges: crop the image, maske pixels around the image edge (left, right, 
+            top, bottom), must larger than 0, if None, use self.config.corpedges
+        
+        :return 2d bool array, True for masked pixel, edgemake included, dymask not included
+        '''
+        if dymask == None:
+            dymask = self.staticmask
+        high = self.config.avgmaskhigh if high == None else high
+        low = self.config.avgmasklow if low == None else low
+        
+        self.calculate.genIntegrationInds(dymask)
+        chi = self.calculate.intensity(image)
+        index = np.rint(self.calculate.tthorqmatrix / self.config.tthorqstep).astype(int)
+        index[index >= len(chi[1]) - 1] = len(chi[1]) - 1
+        avgimage = chi[1][index.ravel()].reshape(index.shape)
+        mask = np.ones((self.ydimension, self.xdimension), dtype=bool)
+        ce = self.cropedges if cropedges == None else cropedges
+        mask[ce[2]:-ce[3], ce[0]:-ce[1]] = np.logical_or(image[ce[2]:-ce[3], ce[0]:-ce[1]] < avgimage * low,
+                                                        image[ce[2]:-ce[3], ce[0]:-ce[1]] > avgimage * high)
+        return mask
 
     def darkPixelMask(self, pic, r=None):
         '''
