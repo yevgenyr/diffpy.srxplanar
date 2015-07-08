@@ -20,6 +20,7 @@ import fnmatch
 import sys
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
 import tifffile
+import tifffile.imsave as saveImage
 import subprocess
 import numpy as np
     
