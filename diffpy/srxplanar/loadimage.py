@@ -19,6 +19,7 @@ import os
 import fnmatch
 import sys
 from diffpy.srxplanar.srxplanarconfig import _configPropertyR
+import tifffile.imsave as saveImage
 
 try:
     import fabio
