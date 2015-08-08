@@ -34,20 +34,12 @@ Examples:
 srxplanar KFe2As2-00838.tif -c test.cfg
 --integration using config file test.cfg
 
-srxplanar KFe2As2-00838.tif -fit2d fit2d.txt
---integration using calibration information in fit2d.txt
-
 srxplanar *.tif -c test.cfg -s
 --integration all .tif image and sum them into one
-
-srxplanar KFe2As2-00838.tif -fit2d fit2d.txt --integrationspace twotheta
--- integrate using calibration information in fit2d.txt and integrate into two theta space
 
 srxplanar --createconfig config.cfg
 --create default (short) config file using all default value
 
-srxplanar --createconfigfull configfull.cfg -fit2d fit2d.txt
---create a complete config file using calibration information in fit2d.txt 
 '''
 
 _optdatalist = [
@@ -68,10 +60,6 @@ _optdatalist = [
             'co':True,
             'd':False, }],
         # Expeiment gropu
-        ['fit2dconfig', {'sec':'Experiment', 'config':'n', 'header':'n',
-            's':'fit2d',
-            'h':'fit2d calibration file name. It contains the calibration results copy from fit2d cmd windows',
-            'd':'', }],
         ['opendirectory', {'sec':'Control', 'header':'n',
             's':'opendir',
             'h':'directory of input 2D image files',
@@ -84,7 +72,7 @@ _optdatalist = [
             'tt':'directory'}],
         ['maskfile', {'sec':'Experiment',
             's':'mask',
-            'h':'the mask file (support fit2d mask, numpy .npy array, and tiff image, >0 stands for masked pixel)',
+            'h':'the mask file (support numpy .npy array, and tiff image, >0 stands for masked pixel)',
             'd':'',
             'tt':'file'}],
         ['createmask', {'sec':'Control', 'config':'n', 'header':'n',
@@ -299,40 +287,22 @@ class SrXplanarConfig(ConfigBase):
         self.extracrop = [a if a > 1 else 1 for a in self.extracrop]
         return
 
-    # def _postUpdateConfig(self, nofit2d=False, **kwargs):
     def _postUpdateConfig(self, **kwargs):
         '''
         post processing after parse args or kwargs, this method is called after 
         in self._postPocessing and before creating config file action  
         
-        load fit2d config if specified in config, and set nocalculatio flag when create 
-        config or create mask
+        set nocalculatio flag when create config or create mask
         
         :param kwargs: optional kwargs
         '''
 
-        self._loadFromFit2D(self.fit2dconfig)
         if (self.createconfig != '')and(self.createconfig != None):
             self.nocalculation = True
         if (self.createconfigfull != '')and(self.createconfigfull != None):
             self.nocalculation = True
         if self.createmask != '':
             self.nocalculation = True
-        return
-
-    def _loadFromFit2D(self, filename):
-        '''
-        load parameters from fit2d calibration information. copy/paste the fit2d calibration 
-        results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
-        
-        :param filename: file name of fit2d result file
-        '''
-        rv = parseFit2D(filename)
-        if len(rv.values()) > 0:
-            for optname in rv.keys():
-                setattr(self, optname, rv[optname])
-            self.fit2dconfig = ''
-            self._updateSelf()
         return
 
 def checkMax(config):
@@ -377,41 +347,6 @@ def checkMax(config):
     tthmaxd = np.degrees(np.max(tthmatrix)) + 0.5
     qmax = np.max(qmatrix) + 0.1
     return tthmaxd, qmax
-
-def parseFit2D(filename):
-    '''
-    load parameters from fit2d calibration information. copy/paste the fit2d calibration 
-    results to a txt file. this function will load xbeamcenter, ybeamceter... from the file
-    
-    :param filename: str, file name (with full path if not in current dir) of fit2d file,
-        or a string containing the calibraiton parameters copy from fit2d.
-        
-    :return: dict, including 'xbeamcenter', 'ybeamcenter', 'wavelength', 'rotationd'(angle of ratation), 
-        'tiltd'(angle of tilt rotation)
-    '''
-    rv = {}
-    def findFloat(line):
-        temp = re.findall('[-+]?\d*\.\d+|[-+]?\d+', line)
-        return map(float, temp)
-    if filename != None:
-        if os.path.exists(filename):
-            f = open(filename, 'r')
-            lines = f.readlines()
-            f.close()
-        else:
-            lines = filename.split()
-        for line in lines:
-            if re.search('Refined Beam centre.*pixels', line):
-                rv['xbeamcenter'], rv['ybeamcenter'] = findFloat(line)
-            elif re.search('Refined sample to detector distance', line):
-                rv['distance'] = findFloat(line)[0]
-            elif re.search('Refined wavelength', line):
-                rv['wavelength'] = findFloat(line)[0]
-            elif re.search('Refined tilt plane rotation angle', line):
-                rv['rotationd'] = findFloat(line)[0]
-            elif re.search('Refined tilt angle', line):
-                rv['tiltd'] = findFloat(line)[0]
-    return rv
 
 SrXplanarConfig.initConfigClass()
 
