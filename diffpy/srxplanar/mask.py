@@ -39,10 +39,9 @@ class Mask(object):
     '''
     provide methods for mask generation, including:
     
-    static mask: fit2d (.msk) mask, tif mask, npy mask
+    static mask: tif mask, npy mask
     dymanic mask: masking dark pixels, bright pixels
     
-    *fit2d mask if supported through Fabio
     '''
 
     xdimension = _configPropertyR('xdimension')
@@ -68,19 +67,15 @@ class Mask(object):
         create a static mask according existing mask file. This mask remain unchanged for different images
         
         :param maskfile: string, file name of mask, 
-            mask file supported: .msk, .npy, .tif file, ATTN: mask in .npy form should be already flipped, 
+            mask file supported: .npy, .tif file, ATTN: mask in .npy form should be already flipped, 
             and 1 (or larger) stands for masked pixels, 0(<0) stands for unmasked pixels
         
         :return: 2d array of boolean, 1 stands for masked pixel
         '''
         maskfile = self.maskfile if maskfile == None else maskfile
 
-        # fit2d mask
         if os.path.exists(maskfile):
-            if maskfile.endswith('.msk'):
-                # rv += self.flipImage(immask.data)
-                rv = openImage(maskfile)
-            elif maskfile.endswith('.npy'):
+            if maskfile.endswith('.npy'):
                 rv = np.load(maskfile)
             elif maskfile.endswith('.tif'):
                 immask = openImage(maskfile)
