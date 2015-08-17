@@ -5,6 +5,7 @@ from functools import partial
 from scipy.optimize import minimize, leastsq, fmin_bfgs, fmin_l_bfgs_b, fmin_tnc, minimize_scalar, fmin_powell, \
                             fmin_cg, fmin_slsqp, brent, golden
 from matplotlib import rcParams
+rcParams['backend'] = 'Qt4Agg'
 try:
     import PySide
     rcParams['backend.qt4'] = 'PySide'
