@@ -33,7 +33,7 @@ def getversioncfg(config=versioncfgfile):
     cp = SafeConfigParser()
     cp.read(config)
     gitdir = os.path.join(MYDIR, '.git')
-    if not os.path.isdir(gitdir):  return cp
+    if not os.path.exists(gitdir):  return cp
     d = cp.defaults()
     g = gitinfo()
     if g['version'] != d.get('version') or g['commit'] != d.get('commit'):
